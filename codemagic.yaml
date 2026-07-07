@@ -42,6 +42,11 @@ workflows:
           [ -f www/index.html ] || printf '<!doctype html><meta charset="utf-8"><title>Inkspred</title><body style="margin:0;background:#0d0d10;color:#f4f1ea;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Inkspred</body>' > www/index.html
           [ -d ios ] || npx cap add ios
           npx cap sync ios
+      - name: Generate Inkspred icon + splash
+        script: |
+          pip3 install --quiet pillow
+          python3 scripts/gen_icon.py
+          npx --yes @capacitor/assets generate --ios
       - name: Add privacy purpose strings to Info.plist (ITMS-90683)
         script: |
           PLIST=ios/App/App/Info.plist
