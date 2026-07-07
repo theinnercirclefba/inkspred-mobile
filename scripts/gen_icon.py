@@ -1,56 +1,70 @@
-"""Inkspred app icon + splash: minimal ink-drop glyph on ink-950.
+"""InkSpred brand assets: blackletter IS monogram icon + wordmark splash.
 
-Run in CI (pip3 install pillow) to draw assets/icon-only.png, assets/splash.png,
-assets/splash-dark.png which @capacitor/assets then turns into all iOS sizes."""
+CI curls scripts/PirataOne-Regular.ttf (OFL) and pip-installs pillow first, then
+runs this to draw assets/icon-only.png, assets/splash.png, assets/splash-dark.png
+which @capacitor/assets expands into every iOS size."""
 import math, os
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
-INK = (13, 13, 16, 255)         # #0d0d10
-OXBLOOD = (140, 47, 57, 255)    # #8c2f39
-GOLD = (201, 163, 95, 255)      # #c9a35f
+INK = (13, 13, 16, 255)
+BONE = (245, 242, 236, 255)
+GOLD = (201, 163, 95, 255)
 
-SS = 4
-OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+HERE = os.path.dirname(os.path.abspath(__file__))
+FONT = os.path.join(HERE, "PirataOne-Regular.ttf")
+OUT = os.path.join(os.path.dirname(HERE), "assets")
 os.makedirs(OUT, exist_ok=True)
+SS = 4
 
 
-def teardrop(draw, cx, cy, R, apex_y, fill):
-    d = cy - apex_y
-    alpha = math.asin(R / d)
-    ang = math.pi / 2 - alpha
-    tp_left = (cx - R * math.sin(ang), cy - R * math.cos(ang))
-    tp_right = (cx + R * math.sin(ang), cy - R * math.cos(ang))
-    pts = [(cx, apex_y), tp_right]
-    start = math.degrees(math.atan2(tp_right[1] - cy, tp_right[0] - cx))
-    end = math.degrees(math.atan2(tp_left[1] - cy, tp_left[0] - cx))
-    if end < start:
-        end += 360
-    steps = 200
+def drip(draw, x, y_top, length, w0):
+    """One continuous drip: stem narrows slightly then swells into a bulb."""
+    rb = w0 * 0.62
+    neck_y = y_top + length - rb
+    left, right = [], []
+    steps = 30
     for i in range(steps + 1):
-        t = math.radians(start + (end - start) * i / steps)
-        pts.append((cx + R * math.cos(t), cy + R * math.sin(t)))
-    pts.append(tp_left)
-    draw.polygon(pts, fill=fill)
+        t = i / steps
+        yy = y_top + (neck_y - y_top) * t
+        ww = w0 * 0.5 * (1 - 0.35 * t)
+        left.append((x - ww, yy))
+        right.append((x + ww, yy))
+    cx, cy = x, neck_y + rb * 0.55
+    for a in range(180, 361, 6):
+        rad = math.radians(a)
+        left.append((cx + rb * math.cos(rad), cy - rb * math.sin(rad) + rb))
+    draw.polygon(left + right[::-1], fill=BONE)
 
 
-def render_glyph(size_px):
-    img = Image.new("RGBA", (size_px, size_px), (0, 0, 0, 0))
+def find_bottom(img, x_frac, s):
+    px = img.load()
+    x = int(x_frac * s)
+    for y in range(s - 1, 0, -1):
+        if px[x, y][:3] != INK[:3]:
+            return y
+    return None
+
+
+def monogram(s):
+    """IS blackletter monogram with drips, on transparent-ink canvas s x s."""
+    img = Image.new("RGBA", (s, s), INK)
     d = ImageDraw.Draw(img)
-    s = size_px
-    cx, cy, R = s * 0.5, s * 0.615, s * 0.27
-    apex_y = s * 0.115
-    teardrop(d, cx, cy, R, apex_y, OXBLOOD)
-    r = s * 0.052
-    hx, hy = cx - R * 0.42, cy - R * 0.42
-    d.ellipse([hx - r, hy - r, hx + r, hy + r], fill=GOLD)
+    font = ImageFont.truetype(FONT, int(s * 0.5))
+    bbox = d.textbbox((0, 0), "IS", font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    tx = (s - tw) / 2 - bbox[0]
+    ty = (s - th) / 2 - bbox[1] - s * 0.055
+    d.text((tx, ty), "IS", font=font, fill=BONE)
+    for x_frac, length, w in ((0.588, 0.115, 0.042), (0.520, 0.068, 0.034)):
+        bottom = find_bottom(img, x_frac, s)
+        if bottom:
+            drip(d, x_frac * s, bottom - s * 0.03, length * s, w * s)
     return img
 
 
 def make_icon():
     s = 1024 * SS
-    img = Image.new("RGBA", (s, s), INK)
-    glyph = render_glyph(int(s * 0.72))
-    img.alpha_composite(glyph, (int(s * 0.14), int(s * 0.15)))
+    img = monogram(s)
     img = img.resize((1024, 1024), Image.LANCZOS).convert("RGB")
     img.save(os.path.join(OUT, "icon-only.png"), optimize=True)
 
@@ -59,8 +73,23 @@ def make_splash():
     s = 2732
     ss = s * 2
     img = Image.new("RGBA", (ss, ss), INK)
-    glyph = render_glyph(int(ss * 0.28))
-    img.alpha_composite(glyph, (int(ss * 0.5 - ss * 0.14), int(ss * 0.5 - ss * 0.155)))
+    glyph = monogram(int(ss * 0.30))
+    # monogram() returns an opaque tile; centre it as-is (same ink background)
+    gx = int(ss * 0.5 - ss * 0.15)
+    gy = int(ss * 0.5 - ss * 0.19)
+    img.paste(glyph, (gx, gy))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT, int(ss * 0.055))
+    text = "InkSpred"
+    bbox = d.textbbox((0, 0), text, font=font)
+    tw = bbox[2] - bbox[0]
+    tx = (ss - tw) / 2 - bbox[0]
+    ty = ss * 0.60
+    d.text((tx, ty), text, font=font, fill=BONE)
+    # gold full stop
+    dot_r = ss * 0.006
+    d.ellipse([tx + tw + dot_r, ty + (bbox[3] - bbox[1]) * 0.82,
+               tx + tw + dot_r * 3, ty + (bbox[3] - bbox[1]) * 0.82 + dot_r * 2], fill=GOLD)
     img = img.resize((s, s), Image.LANCZOS).convert("RGB")
     img.save(os.path.join(OUT, "splash.png"), optimize=True)
     img.save(os.path.join(OUT, "splash-dark.png"), optimize=True)
