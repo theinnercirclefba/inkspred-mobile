@@ -1,18 +1,12 @@
 # Codemagic CI/CD for the Inkspred app — builds iOS + Android in the cloud (no Mac needed).
 # Reuses the SAME account-level Codemagic setup as the Chop Shop 86 / Inner Circle apps:
 #   • integration "app_store_connect"  → the App Store Connect API key (already added)
-#   • env group "signing"              → CERT_KEY (persistent iOS signing cert, already added)
+#   • env group "signing"              → CERT_KEY (persistent iOS signing cert)
 #   • env group "android_signing"      → CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
-#   • $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS → Google Play publishing (already added)
+#   • $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS → Google Play publishing
 #
 # Native ios/ and android/ folders are NOT committed — each build regenerates them with
 # `cap add` on the cloud instance, so nothing needs a Mac or the Android SDK locally.
-#
-# One-time setup:
-#   1. Get this code onto GitHub (the inkspred repo, or apps/mobile as its own repo).
-#   2. codemagic.io → add the app → point it at the repo (auto-detects this file).
-#   3. Register the app in App Store Connect with bundle id  app.inkspred
-#   4. Push to main (or run manually) → iOS build lands in TestFlight.
 
 workflows:
   ios-build:
@@ -48,6 +42,17 @@ workflows:
           [ -f www/index.html ] || printf '<!doctype html><meta charset="utf-8"><title>Inkspred</title><body style="margin:0;background:#0d0d10;color:#f4f1ea;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Inkspred</body>' > www/index.html
           [ -d ios ] || npx cap add ios
           npx cap sync ios
+      - name: Add privacy purpose strings to Info.plist (ITMS-90683)
+        script: |
+          PLIST=ios/App/App/Info.plist
+          add_str() {
+            /usr/libexec/PlistBuddy -c "Delete :$1" "$PLIST" 2>/dev/null || true
+            /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$PLIST"
+          }
+          add_str NSPhotoLibraryUsageDescription "Inkspred lets you upload tattoo reference photos and portfolio images from your photo library."
+          add_str NSCameraUsageDescription "Inkspred lets you take photos of tattoos and reference images to share with your artist."
+          add_str NSPhotoLibraryAddUsageDescription "Inkspred can save tattoo designs and aftercare guides to your photo library."
+          /usr/libexec/PlistBuddy -c "Print" "$PLIST" | grep -A1 UsageDescription || true
       - name: Install CocoaPods
         script: |
           cd ios/App && pod install
