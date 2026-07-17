@@ -14,7 +14,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "app.inkspred",
-  appName: "Inkspred",
+  appName: "InkSpred",
   webDir: "www",
   appendUserAgent: "InkspredNative",
   server: {
