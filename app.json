@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "InkSpred",
+    "slug": "inkspred",
+    "scheme": "inkspred",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0d0d10",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.inkspred",
+      "userInterfaceStyle": "dark",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "InkSpred shows tattoo artists and studios near you.",
+        "NSCameraUsageDescription": "InkSpred lets you take photos of tattoos and reference images to share with your artist.",
+        "NSPhotoLibraryUsageDescription": "InkSpred lets you upload tattoo reference photos and portfolio images from your photo library.",
+        "NSPhotoLibraryAddUsageDescription": "InkSpred can save tattoo designs and aftercare guides to your photo library."
+      }
+    },
+    "android": {
+      "package": "app.inkspred",
+      "userInterfaceStyle": "dark"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "InkSpred shows tattoo artists and studios near you."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://eztmyacpwhxwbmigrhdy.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dG15YWNwd2h4d2JtaWdyaGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNzEyNTksImV4cCI6MjA5ODY0NzI1OX0.qKk2DmzaPK-HnFNyhlsE-1k1nqAyrl6Hdv2xdU9tNHA"
+    }
+  }
+}

@@ -1,24 +1,27 @@
-# Codemagic CI/CD for the Inkspred app — builds iOS + Android in the cloud (no Mac needed).
-# Reuses the SAME account-level Codemagic setup as the Chop Shop 86 / Inner Circle apps:
-#   • integration "app_store_connect"  → the App Store Connect API key (already added)
-#   • env group "signing"              → CERT_KEY (persistent iOS signing cert, already added)
-#   • env group "android_signing"      → CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
-#   • $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS → Google Play publishing (already added)
+# Codemagic CI/CD for the InkSpred NATIVE app (Expo SDK 52 / expo-router).
 #
-# Native ios/ and android/ folders are NOT committed — each build regenerates them with
-# `cap add` on the cloud instance, so nothing needs a Mac or the Android SDK locally.
+# This REPLACES the old Capacitor wrapper pipeline. It builds a real React
+# Native iOS app on a cloud Mac and ships it to TestFlight.
 #
-# One-time setup:
-#   1. Get this code onto GitHub (the inkspred repo, or apps/mobile as its own repo).
-#   2. codemagic.io → add the app → point it at the repo (auto-detects this file).
-#   3. Register the app in App Store Connect with bundle id  app.inkspred
-#   4. Push to main (or run manually) → iOS build lands in TestFlight.
+# This file lives at apps/native/codemagic.yaml in the monorepo, but it is
+# pushed to the ROOT of the standalone build repo (theinnercirclefba/
+# inkspred-mobile) by scripts/push-to-buildrepo.py — Codemagic auto-detects a
+# codemagic.yaml at the repo root, so no dashboard config changes are needed.
+#
+# Reuses the SAME account-level Codemagic setup as the Capacitor wrapper and the
+# Chop Shop 86 / Inner Circle apps (nothing here needs re-adding):
+#   • integration "app_store_connect" → App Store Connect API key
+#   • env group "signing"             → CERT_KEY (persistent iOS dist cert)
+#   • bundle id app.inkspred          → registered in App Store Connect
+#
+# Native ios/ is NOT committed — `expo prebuild` regenerates it on the cloud
+# instance every build, so nothing here needs a Mac locally.
 
 workflows:
-  ios-build:
-    name: Inkspred iOS — TestFlight
+  ios-native:
+    name: InkSpred iOS (native) — TestFlight
     instance_type: mac_mini_m2
-    max_build_duration: 30
+    max_build_duration: 45
     integrations:
       app_store_connect: app_store_connect
     environment:
@@ -26,8 +29,9 @@ workflows:
         - signing
       vars:
         BUNDLE_ID: "app.inkspred"
-        XCODE_WORKSPACE: "App.xcworkspace"
-        XCODE_SCHEME: "App"
+        # expo prebuild derives these from app.json's name "InkSpred".
+        XCODE_WORKSPACE: "ios/InkSpred.xcworkspace"
+        XCODE_SCHEME: "InkSpred"
       node: 24
       xcode: latest
       cocoapods: default
@@ -41,28 +45,37 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: |
+          # Strip any workspace-protocol deps (version "*" or "workspace:*")
+          # before install — those only resolve inside the monorepo, and this
+          # standalone repo has no registry entry for them. They are unused in
+          # the app source, so removing them is safe.
+          node -e '
+            const fs = require("fs");
+            const p = "package.json";
+            const pkg = JSON.parse(fs.readFileSync(p, "utf8"));
+            let removed = [];
+            for (const field of ["dependencies", "devDependencies"]) {
+              const deps = pkg[field];
+              if (!deps) continue;
+              for (const [name, ver] of Object.entries(deps)) {
+                if (ver === "*" || String(ver).startsWith("workspace:")) {
+                  delete deps[name];
+                  removed.push(name);
+                }
+              }
+            }
+            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + "\n");
+            console.log("Pruned workspace deps:", removed.join(", ") || "(none)");
+          '
           npm install
-      - name: Ensure web assets + iOS platform, then sync
+      - name: Prebuild iOS native project (generates ios/)
         script: |
-          mkdir -p www
-          [ -f www/index.html ] || printf '<!doctype html><meta charset="utf-8"><title>Inkspred</title><body style="margin:0;background:#0d0d10;color:#f4f1ea;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Inkspred</body>' > www/index.html
-          [ -d ios ] || npx cap add ios
-          npx cap sync ios
-      - name: Add privacy purpose strings to Info.plist (ITMS-90683)
-        script: |
-          PLIST=ios/App/App/Info.plist
-          add_str() {
-            /usr/libexec/PlistBuddy -c "Delete :$1" "$PLIST" 2>/dev/null || true
-            /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$PLIST"
-          }
-          add_str NSPhotoLibraryUsageDescription "Inkspred lets you upload tattoo reference photos and portfolio images from your photo library."
-          add_str NSCameraUsageDescription "Inkspred lets you take photos of tattoos and reference images to share with your artist."
-          add_str NSPhotoLibraryAddUsageDescription "Inkspred can save tattoo designs and aftercare guides to your photo library."
-          add_str NSLocationWhenInUseUsageDescription "InkSpred shows tattoo artists and studios near you on the map."
-          /usr/libexec/PlistBuddy -c "Print" "$PLIST" | grep -A1 UsageDescription || true
+          # --no-install: skip the automatic pod install / npm install; we run
+          # pod install explicitly in the next step so it's visible in the log.
+          npx expo prebuild --platform ios --no-install
       - name: Install CocoaPods
         script: |
-          cd ios/App && pod install
+          cd ios && pod install
       - name: Set up code signing (reuses the persistent CERT_KEY)
         script: |
           keychain initialize
@@ -75,11 +88,10 @@ workflows:
           xcode-project use-profiles
       - name: Set build number from Codemagic build counter
         script: |
-          cd ios/App
-          agvtool new-version -all $(($BUILD_NUMBER + 1))
+          cd ios
+          agvtool new-version -all $BUILD_NUMBER
       - name: Build iOS .ipa
         script: |
-          cd ios/App
           set +e
           xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
           RC=$?
@@ -90,93 +102,10 @@ workflows:
           fi
           exit $RC
     artifacts:
-      - ios/App/build/ios/ipa/*.ipa
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - ios/App/build/*.app.dSYM.zip
+      - "*.app.dSYM.zip"
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-
-  android-debug:
-    name: Inkspred Android — Debug APK (sideload)
-    instance_type: linux_x2
-    max_build_duration: 20
-    environment:
-      vars:
-        PACKAGE_NAME: "app.inkspred"
-      node: 24
-      java: 21
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: "main"
-          include: true
-          source: true
-    scripts:
-      - name: Install npm dependencies
-        script: |
-          npm install
-      - name: Ensure web assets + Android platform, then sync
-        script: |
-          mkdir -p www
-          [ -f www/index.html ] || printf '<!doctype html><meta charset="utf-8"><title>Inkspred</title><body style="margin:0;background:#0d0d10;color:#f4f1ea;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Inkspred</body>' > www/index.html
-          [ -d android ] || npx cap add android
-          npx cap sync android
-      - name: Build debug APK
-        script: |
-          cd android && ./gradlew assembleDebug
-    artifacts:
-      - android/app/build/outputs/apk/debug/*.apk
-    publishing:
-      email:
-        recipients:
-          - lhullindustries@gmail.com
-        notify:
-          success: true
-          failure: true
-
-  android-release:
-    name: Inkspred Android — Release (Play internal)
-    instance_type: linux_x2
-    max_build_duration: 25
-    environment:
-      vars:
-        PACKAGE_NAME: "app.inkspred"
-      groups:
-        - android_signing
-      node: 24
-      java: 21
-    scripts:
-      - name: Install npm dependencies
-        script: |
-          npm install
-      - name: Ensure web assets + Android platform, then sync
-        script: |
-          mkdir -p www
-          [ -f www/index.html ] || printf '<!doctype html><meta charset="utf-8"><title>Inkspred</title><body style="margin:0;background:#0d0d10;color:#f4f1ea;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">Inkspred</body>' > www/index.html
-          [ -d android ] || npx cap add android
-          npx cap sync android
-      - name: Decode keystore from base64
-        script: |
-          echo $CM_KEYSTORE | base64 -d > android/app/release.keystore
-      - name: Wire signing into Gradle
-        script: |
-          cat >> android/key.properties <<'EOF'
-          storeFile=release.keystore
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          keyPassword=$CM_KEY_PASSWORD
-          EOF
-      - name: Build release AAB + APK
-        script: |
-          cd android && ./gradlew bundleRelease assembleRelease
-    artifacts:
-      - android/app/build/outputs/bundle/release/*.aab
-      - android/app/build/outputs/apk/release/*.apk
-    publishing:
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        submit_as_draft: false

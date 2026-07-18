@@ -1,28 +1,45 @@
 {
-  "name": "@inkspred/mobile",
+  "name": "@inkspread/native",
   "version": "0.1.0",
   "private": true,
-  "description": "Inkspred native app shell (Capacitor) — wraps the Inkspred web app with native push, camera and splash.",
+  "main": "expo-router/entry",
   "scripts": {
-    "sync": "cap sync",
-    "add:ios": "cap add ios",
-    "add:android": "cap add android",
-    "open:ios": "cap open ios",
-    "open:android": "cap open android",
-    "copy": "cap copy"
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit",
+    "bundle:check": "expo export --platform ios --output-dir .expo-export-check"
   },
   "dependencies": {
-    "@capacitor/app": "^6.0.2",
-    "@capacitor/android": "^6.1.2",
-    "@capacitor/camera": "^6.1.2",
-    "@capacitor/core": "^6.1.2",
-    "@capacitor/ios": "^6.1.2",
-    "@capacitor/push-notifications": "^6.0.4",
-    "@capacitor/splash-screen": "^6.0.3",
-    "@capacitor/status-bar": "^6.0.2"
+    "@expo-google-fonts/fraunces": "^0.2.3",
+    "@expo-google-fonts/inter": "^0.2.3",
+    "@expo-google-fonts/pirata-one": "^0.2.3",
+    "@expo/vector-icons": "~14.0.4",
+    "@inkspread/core": "*",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@supabase/supabase-js": "^2.110.0",
+    "expo": "~52.0.0",
+    "expo-asset": "~11.0.5",
+    "expo-constants": "~17.0.0",
+    "expo-font": "~13.0.0",
+    "expo-linking": "~7.0.0",
+    "expo-location": "~18.0.10",
+    "expo-router": "~4.0.0",
+    "expo-secure-store": "~14.0.0",
+    "expo-splash-screen": "~0.29.0",
+    "expo-status-bar": "~2.0.0",
+    "nativewind": "4.1.23",
+    "react": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-maps": "1.18.0",
+    "react-native-reanimated": "~3.16.1",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2",
+    "@babel/core": "^7.25.2",
+    "@types/react": "~18.3.12",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3"
   }
 }
