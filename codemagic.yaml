@@ -33,7 +33,9 @@ workflows:
         XCODE_WORKSPACE: "ios/InkSpred.xcworkspace"
         XCODE_SCHEME: "InkSpred"
       node: 24
-      xcode: latest
+      # Pinned: RN 0.76's bundled fmt fails consteval checks under the newest
+      # clang (Xcode 26.x). 16.4 is the newest officially supported toolchain.
+      xcode: 16.4
       cocoapods: default
     triggering:
       events:
