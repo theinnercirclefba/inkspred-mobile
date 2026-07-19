@@ -19,6 +19,10 @@ export default function ArtistLayout() {
         name="thread/[threadId]"
         options={{ animation: "slide_from_right" }}
       />
+      <Stack.Screen name="profile/index" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="profile/services" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="profile/availability" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="profile/portfolio" options={{ animation: "slide_from_right" }} />
     </Stack>
   );
 }

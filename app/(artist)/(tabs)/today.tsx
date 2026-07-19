@@ -31,6 +31,7 @@ const EMPTY: ArtistDashboard = {
 const REQUESTS_HREF = "/(artist)/(tabs)/requests" as Href;
 const MESSAGES_HREF = "/(artist)/(tabs)/messages" as Href;
 const MONEY_HREF = "/(artist)/(tabs)/money" as Href;
+const PROFILE_HREF = "/(artist)/profile" as Href;
 
 export default function Today() {
   const router = useRouter();
@@ -240,6 +241,11 @@ export default function Today() {
                 icon="wallet"
                 label="Money"
                 onPress={() => router.push(MONEY_HREF)}
+              />
+              <QuickLink
+                icon="person"
+                label="Profile"
+                onPress={() => router.push(PROFILE_HREF)}
               />
             </View>
           </>
