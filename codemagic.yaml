@@ -1,4 +1,4 @@
-# Codemagic CI/CD for the InkSpred NATIVE app (Expo SDK 52 / expo-router).
+# Codemagic CI/CD for the InkSpred NATIVE app (Expo SDK 54 / expo-router).
 #
 # This REPLACES the old Capacitor wrapper pipeline. It builds a real React
 # Native iOS app on a cloud Mac and ships it to TestFlight.
@@ -33,9 +33,11 @@ workflows:
         XCODE_WORKSPACE: "ios/InkSpred.xcworkspace"
         XCODE_SCHEME: "InkSpred"
       node: 24
-      # Pinned: RN 0.76's bundled fmt fails consteval checks under the newest
-      # clang (Xcode 26.x). 16.4 is the newest officially supported toolchain.
-      xcode: 16.4
+      # Apple 2026 rule: App Store uploads must be built with the iOS 26 SDK
+      # (Xcode 26). This is now compatible — Expo SDK 54 (RN 0.81) ships an fmt
+      # that consteval-compiles cleanly under Xcode 26's clang, so we track the
+      # latest toolchain again instead of pinning to 16.4.
+      xcode: latest
       cocoapods: default
     triggering:
       events:

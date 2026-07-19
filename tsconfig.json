@@ -4,15 +4,13 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      // Pin react/react-native to this app's own copies so hoisted deps
-      // (@react-navigation/*, @expo/vector-icons) can't drift to the web app's
-      // React 19 @types at the workspace root. These aliases are also consumed
-      // by Expo's Metro resolver, so they must point at the runtime packages.
-      "react": ["./node_modules/react"],
-      "react/*": ["./node_modules/react/*"],
-      "react-native": ["./node_modules/react-native"],
-      "react-native/*": ["./node_modules/react-native/*"]
+      "@/*": ["./src/*"]
+      // React 18/19 skew is gone: SDK 54 puts this app on React 19.1, the same
+      // major the web app uses at the workspace root, so hoisted deps
+      // (@react-navigation/*, @expo/vector-icons) resolving the root React 19
+      // @types no longer conflict with the app's own types. The old react /
+      // react-native path pins (which forced type resolution onto the runtime
+      // packages and broke the JSX namespace under SDK 54) are no longer needed.
     }
   },
   "include": [

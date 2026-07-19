@@ -53,8 +53,9 @@ const { withNativeWind } = require("nativewind/metro");
 const config = getDefaultConfig(projectRoot);
 
 if (MONOREPO) {
-  // 1. Watch all files within the monorepo
-  config.watchFolders = [workspaceRoot];
+  // 1. Watch all files within the monorepo — APPEND to Metro's defaults rather
+  // than replacing them, so the SDK 54 default watch entries are preserved.
+  config.watchFolders = [...(config.watchFolders ?? []), workspaceRoot];
 
   // 2. Let Metro resolve packages from the app first, then the workspace root
   config.resolver.nodeModulesPaths = [
@@ -62,8 +63,14 @@ if (MONOREPO) {
     path.resolve(workspaceRoot, "node_modules"),
   ];
 
-  // 3. Disable hierarchical lookup so hoisted workspace deps resolve predictably
-  config.resolver.disableHierarchicalLookup = true;
+  // NOTE: hierarchical lookup is intentionally LEFT ENABLED (Metro's default).
+  // The SDK 52 config disabled it to force the React 18 native stack to resolve
+  // predictably, but under SDK 54 some bundled deps nest their own transitive
+  // packages (e.g. expo's whatwg-url-without-unicode nests webidl-conversions
+  // in its OWN node_modules rather than hoisting it). Disabling hierarchical
+  // lookup makes Metro ignore those nested folders and the export fails to
+  // resolve them. The standard Expo monorepo recipe (watchFolders +
+  // nodeModulesPaths, hierarchical lookup on) resolves both correctly.
 }
 // Standalone: leave Metro's defaults (single project root, hierarchical lookup)
 // exactly as getDefaultConfig produced them.

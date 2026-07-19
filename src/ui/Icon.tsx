@@ -1,29 +1,17 @@
-import type { ComponentType } from "react";
-import type { StyleProp, TextStyle } from "react-native";
+import type { ComponentProps } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
 /**
  * Single, correctly-typed entry point for icons.
  *
- * @expo/vector-icons is hoisted to the workspace root, where it resolves the
- * web app's React 19 @types (whose `Component` dropped the legacy `refs`
- * field). This native app runs React 18, so the raw `Ionicons` class trips
- * TS2786 ("cannot be used as a JSX component") when rendered against the app's
- * React 18 JSX namespace. Re-casting the class to this app's own
- * `ComponentType` reconciles the two React type copies without touching the
- * shared workspace-root install.
- *
- * Props are declared explicitly rather than inferred via `ComponentProps`,
- * because inferring from the React-19-typed class re-triggers the same
- * cross-version constraint failure.
+ * Under Expo SDK 54 this app and the web app both run React 19, so the old
+ * cross-version cast (React 18 app vs React 19 @types hoisted at the workspace
+ * root) is no longer needed — Ionicons types cleanly against the shared React
+ * 19 JSX namespace. Keeping this as the icon API means callers import from one
+ * place and never touch @expo/vector-icons directly.
  */
-export type IconName = keyof typeof Ionicons.glyphMap;
+export type IconName = ComponentProps<typeof Ionicons>["name"];
 
-export interface IconProps {
-  name: IconName;
-  size?: number;
-  color?: string;
-  style?: StyleProp<TextStyle>;
-}
+export type IconProps = ComponentProps<typeof Ionicons>;
 
-export const Icon = Ionicons as unknown as ComponentType<IconProps>;
+export const Icon = Ionicons;
