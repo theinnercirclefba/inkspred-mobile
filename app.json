@@ -22,7 +22,8 @@
         "NSLocationWhenInUseUsageDescription": "InkSpred shows tattoo artists and studios near you.",
         "NSCameraUsageDescription": "InkSpred lets you take photos of tattoos and reference images to share with your artist.",
         "NSPhotoLibraryUsageDescription": "InkSpred lets you upload tattoo reference photos and portfolio images from your photo library.",
-        "NSPhotoLibraryAddUsageDescription": "InkSpred can save tattoo designs and aftercare guides to your photo library."
+        "NSPhotoLibraryAddUsageDescription": "InkSpred can save tattoo designs and aftercare guides to your photo library.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
