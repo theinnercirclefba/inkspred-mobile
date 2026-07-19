@@ -17,3 +17,5 @@ export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { Field } from "./Field";
 export type { FieldProps } from "./Field";
+export { SocialAuthBlock } from "./SocialAuthBlock";
+export type { SocialAuthBlockProps } from "./SocialAuthBlock";

@@ -6,6 +6,7 @@ import { Text } from "../../src/ui/Text";
 import { Button } from "../../src/ui/Button";
 import { Field } from "../../src/ui/Field";
 import { Wordmark } from "../../src/ui/Wordmark";
+import { SocialAuthBlock } from "../../src/ui/SocialAuthBlock";
 import { useAuth } from "../../src/lib/auth";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -63,6 +64,8 @@ export default function Login() {
           Sign in to pick up where you left off.
         </Text>
 
+        <SocialAuthBlock dividerLabel="or use email" />
+
         <View className="gap-4">
           <Field
             label="Email"
@@ -106,8 +109,8 @@ export default function Login() {
         ) : null}
 
         <Button
-          label="Sign in"
-          variant="primary"
+          label="Sign in with email"
+          variant="secondary"
           className="mt-6"
           loading={submitting}
           onPress={onSubmit}

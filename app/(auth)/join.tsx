@@ -4,6 +4,7 @@ import { Screen } from "../../src/ui/Screen";
 import { Text } from "../../src/ui/Text";
 import { Icon, type IconName } from "../../src/ui/Icon";
 import { Wordmark } from "../../src/ui/Wordmark";
+import { SocialAuthBlock } from "../../src/ui/SocialAuthBlock";
 import { colors } from "../../src/ui/tokens";
 import type { AccountType } from "../../src/lib/auth";
 
@@ -57,6 +58,8 @@ export default function Join() {
           One account, whichever side of the chair you sit on. Choose how you'll
           use InkSpred.
         </Text>
+
+        <SocialAuthBlock dividerLabel="or use email" />
 
         <View className="gap-3">
           {ROLES.map((role) => (

@@ -19,6 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.inkspred",
       "userInterfaceStyle": "dark",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "InkSpred shows tattoo artists and studios near you.",
         "NSCameraUsageDescription": "InkSpred lets you take photos of tattoos and reference images to share with your artist.",
@@ -45,7 +46,9 @@
         {
           "locationWhenInUsePermission": "InkSpred shows tattoo artists and studios near you."
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

@@ -9,7 +9,7 @@ import { Wordmark } from "../src/ui/Wordmark";
  * then routes:
  *   - signed out            -> (auth)/login
  *   - signed in, role known -> that role's tab group
- *   - signed in, no profile  -> (auth)/join to finish choosing a role
+ *   - signed in, no profile  -> (auth)/complete to finish choosing a role
  *
  * While the session is resolving we hold on a branded splash so there's no
  * flash of the wrong screen on a warm start.
@@ -34,10 +34,11 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  // Signed in but the profile row hasn't been created yet (e.g. confirmed via
-  // email on another device) — send them to pick a role and finish setup.
+  // Signed in but the profile row hasn't been created yet — typically a social
+  // (Apple/Google) sign-in, which can't carry a role. Send them to pick one and
+  // finish setup before entering the app.
   if (!profile) {
-    return <Redirect href="/(auth)/join" />;
+    return <Redirect href="/(auth)/complete" />;
   }
 
   return <Redirect href={roleHome(profile.role) as never} />;

@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { signInWithApple as appleSignIn, signInWithGoogle as googleSignIn } from "./socialAuth";
 
 /**
  * Auth state for the whole app. Wraps Supabase auth (email + password, session
@@ -44,6 +45,8 @@ interface AuthResult {
   error?: string;
   /** True when sign-up succeeded but email confirmation is required (no session). */
   needsEmailConfirmation?: boolean;
+  /** The user backed out of a native/OAuth sheet — the UI should stay put. */
+  cancelled?: boolean;
 }
 
 interface AuthContextValue {
@@ -60,6 +63,15 @@ interface AuthContextValue {
     password: string;
     accountType: AccountType;
   }) => Promise<AuthResult>;
+  /** Native "Continue with Apple". Establishes the session; role comes later. */
+  signInWithApple: () => Promise<AuthResult>;
+  /** Browser-based "Continue with Google" (gated behind isGoogleConfigured). */
+  signInWithGoogle: () => Promise<AuthResult>;
+  /**
+   * Create the public.users row for a signed-in social user who has no profile
+   * yet, using the chosen account type plus name/email from session metadata.
+   */
+  completeProfile: (accountType: AccountType) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   /** Re-fetch the profile row (after onboarding writes, etc.). */
   refresh: () => Promise<void>;
@@ -207,6 +219,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loadProfileFor],
   );
 
+  // Shared tail for a social sign-in: on success, load the profile so the
+  // router can tell a returning user (has a row) from a new one (needs /complete).
+  const finishSocial = useCallback(
+    async (result: Awaited<ReturnType<typeof appleSignIn>>): Promise<AuthResult> => {
+      if (!result.ok) {
+        if (result.cancelled) return { ok: false, cancelled: true };
+        return { ok: false, error: result.error ?? "We couldn't sign you in. Please try again." };
+      }
+      if (result.session) {
+        setSession(result.session);
+        await loadProfileFor(result.session);
+      }
+      return { ok: true };
+    },
+    [loadProfileFor],
+  );
+
+  const signInWithApple = useCallback(
+    async (): Promise<AuthResult> => finishSocial(await appleSignIn()),
+    [finishSocial],
+  );
+
+  const signInWithGoogle = useCallback(
+    async (): Promise<AuthResult> => finishSocial(await googleSignIn()),
+    [finishSocial],
+  );
+
+  const completeProfile = useCallback(
+    async (accountType: AccountType): Promise<AuthResult> => {
+      const user = session?.user;
+      if (!user) {
+        return { ok: false, error: "Your session has expired. Please sign in again." };
+      }
+
+      const role = ACCOUNT_ROLE[accountType];
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+      // Apple/Google surface the name under a few keys; take the first we find.
+      const metaName =
+        (typeof meta.full_name === "string" && meta.full_name) ||
+        (typeof meta.name === "string" && meta.name) ||
+        "";
+      const email = user.email ?? (typeof meta.email === "string" ? meta.email : "") ?? "";
+
+      const { error } = await supabase.from("users").insert({
+        id: user.id,
+        role,
+        email,
+        full_name: metaName,
+      });
+      // 23505 = row already exists (e.g. a double-tap); treat as success.
+      if (error && error.code !== "23505") {
+        return { ok: false, error: "We couldn't finish setting up your account. Please try again." };
+      }
+
+      await loadProfileFor(session);
+      return { ok: true };
+    },
+    [session, loadProfileFor],
+  );
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     activeUserId.current = null;
@@ -226,10 +298,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: profile?.role ?? null,
       signIn,
       signUp,
+      signInWithApple,
+      signInWithGoogle,
+      completeProfile,
       signOut,
       refresh,
     }),
-    [initialising, session, profile, signIn, signUp, signOut, refresh],
+    [
+      initialising,
+      session,
+      profile,
+      signIn,
+      signUp,
+      signInWithApple,
+      signInWithGoogle,
+      completeProfile,
+      signOut,
+      refresh,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

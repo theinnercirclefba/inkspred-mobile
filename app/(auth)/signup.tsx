@@ -8,6 +8,7 @@ import { Field } from "../../src/ui/Field";
 import { Badge } from "../../src/ui/Badge";
 import { Icon } from "../../src/ui/Icon";
 import { Wordmark } from "../../src/ui/Wordmark";
+import { SocialAuthBlock } from "../../src/ui/SocialAuthBlock";
 import { colors } from "../../src/ui/tokens";
 import { useAuth, type AccountType } from "../../src/lib/auth";
 
@@ -127,6 +128,8 @@ export default function Signup() {
           {copy.blurb}
         </Text>
 
+        <SocialAuthBlock dividerLabel="or sign up with email" />
+
         <View className="gap-4">
           <Field
             label="Full name"
@@ -184,8 +187,8 @@ export default function Signup() {
         ) : null}
 
         <Button
-          label="Create account"
-          variant="primary"
+          label="Create account with email"
+          variant="secondary"
           className="mt-6"
           loading={submitting}
           onPress={onSubmit}
