@@ -3,13 +3,14 @@
     "name": "InkSpred",
     "slug": "inkspred",
     "scheme": "inkspred",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#0d0d10",
-      "resizeMode": "contain"
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d0d10"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -28,7 +29,11 @@
     },
     "android": {
       "package": "app.inkspred",
-      "userInterfaceStyle": "dark"
+      "userInterfaceStyle": "dark",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d0d10"
+      }
     },
     "plugins": [
       "expo-router",
@@ -48,6 +53,7 @@
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://eztmyacpwhxwbmigrhdy.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dG15YWNwd2h4d2JtaWdyaGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNzEyNTksImV4cCI6MjA5ODY0NzI1OX0.qKk2DmzaPK-HnFNyhlsE-1k1nqAyrl6Hdv2xdU9tNHA"
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }

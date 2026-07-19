@@ -93,7 +93,7 @@ workflows:
       - name: Set build number from Codemagic build counter
         script: |
           cd ios
-          agvtool new-version -all $BUILD_NUMBER
+          agvtool new-version -all $(($BUILD_NUMBER + 20))
       - name: Build iOS .ipa
         script: |
           set +e
