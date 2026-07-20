@@ -14,11 +14,13 @@ import { Text } from "../../../src/ui/Text";
 import { Icon } from "../../../src/ui/Icon";
 import { Button } from "../../../src/ui/Button";
 import { Badge } from "../../../src/ui/Badge";
+import { Stars } from "../../../src/ui/Stars";
 import { Artwork, monogram } from "../../../src/ui/Artwork";
 import { colors } from "../../../src/ui/tokens";
 import { publicPortfolioUrl } from "../../../src/lib/images";
 import { formatGBP, formatCompact, depositLabel } from "../../../src/lib/money";
 import { styleLabel } from "../../../src/lib/geo";
+import { openExternal } from "../../../src/lib/links";
 import {
   getArtistByHandle,
   isFollowing as fetchIsFollowing,
@@ -26,7 +28,13 @@ import {
   unfollowArtist,
   type ArtistProfile,
   type ArtistPortfolioRow,
+  type ArtistReviewRow,
 } from "../../../src/lib/data/artists";
+import {
+  getExternalReviewConnection,
+  type ExternalReviewConnection,
+} from "../../../src/lib/data/reviews";
+import { GoogleBadge } from "../../../src/features/reviews/GoogleBadge";
 import { useAuth } from "../../../src/lib/auth";
 
 type Status = "loading" | "ready" | "notfound" | "error";
@@ -38,6 +46,7 @@ export default function ArtistProfileScreen() {
 
   const [status, setStatus] = useState<Status>("loading");
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
+  const [google, setGoogle] = useState<ExternalReviewConnection | null>(null);
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
 
@@ -57,6 +66,11 @@ export default function ArtistProfileScreen() {
       }
       setArtist(profile);
       setStatus("ready");
+      // Google/external badge — artist's own connection wins over the shop's.
+      // Fully additive: a null (incl. table absent) simply renders no badge.
+      void getExternalReviewConnection([profile.id, profile.studioId])
+        .then(setGoogle)
+        .catch(() => setGoogle(null));
       if (session) {
         const isF = await fetchIsFollowing(profile.id);
         setFollowing(isF);
@@ -165,6 +179,17 @@ export default function ArtistProfileScreen() {
               </Text>
 
               <View className="mt-2 flex-row flex-wrap items-center gap-x-4 gap-y-1">
+                {artist.ratingAvg !== null ? (
+                  <View className="flex-row items-center gap-1.5">
+                    <Stars rating={artist.ratingAvg} size={13} />
+                    <Text variant="bodyMedium" className="text-[13px] text-bone-300">
+                      {artist.ratingAvg.toFixed(1)}
+                    </Text>
+                    <Text variant="body" className="text-[13px] text-bone-500">
+                      ({artist.reviewsCount})
+                    </Text>
+                  </View>
+                ) : null}
                 {artist.city ? (
                   <View className="flex-row items-center gap-1">
                     <Icon name="location-outline" size={14} color={colors.bone[500]} />
@@ -207,6 +232,8 @@ export default function ArtistProfileScreen() {
                   </Text>
                 </View>
               ) : null}
+
+              {google ? <GoogleBadge connection={google} className="mt-3" /> : null}
 
               {artist.bio ? (
                 <Text variant="body" className="mt-4 text-bone-300">
@@ -297,6 +324,45 @@ export default function ArtistProfileScreen() {
             </View>
           )}
         </Section>
+
+        {/* Reviews */}
+        <Section title="Reviews" count={artist.reviewsCount}>
+          {artist.reviews.length === 0 ? (
+            <View className="rounded-2xl border border-ink-700 bg-ink-900 p-5">
+              <Text variant="body" className="text-bone-300">
+                No reviews yet.
+              </Text>
+              <Text variant="body" className="mt-1 text-[13px] text-bone-500">
+                Verified reviews appear here once clients have booked and sat
+                through InkSpred.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {artist.ratingAvg !== null ? (
+                <View className="mb-4 flex-row items-center gap-2">
+                  <Stars rating={artist.ratingAvg} size={15} />
+                  <Text variant="bodySemibold" className="text-bone-100">
+                    {artist.ratingAvg.toFixed(1)}
+                  </Text>
+                  <Text variant="body" className="text-[13px] text-bone-500">
+                    · {artist.reviewsCount} verified{" "}
+                    {artist.reviewsCount === 1 ? "review" : "reviews"}
+                  </Text>
+                </View>
+              ) : null}
+              <View className="gap-3">
+                {artist.reviews.map((review) => (
+                  <ReviewRow key={review.id} review={review} />
+                ))}
+              </View>
+              <Text variant="caption" className="mt-3">
+                Verified reviews can only be left by clients who booked and sat
+                through InkSpred.
+              </Text>
+            </>
+          )}
+        </Section>
       </ScrollView>
 
       {/* Sticky request-booking CTA */}
@@ -369,6 +435,33 @@ function PortfolioGrid({ items }: { items: ArtistPortfolioRow[] }) {
   );
 }
 
+/** A single published review — score, month/year and a Verified booking chip. */
+function ReviewRow({ review }: { review: ArtistReviewRow }) {
+  return (
+    <View className="rounded-2xl border border-ink-700 bg-ink-900 p-4">
+      <View className="flex-row items-center justify-between gap-3">
+        <Stars rating={review.rating} size={14} allowHalf={false} />
+        <Text variant="caption" className="text-bone-500">
+          {reviewMonthYear(review.created_at)}
+        </Text>
+      </View>
+      {review.body ? (
+        <Text variant="body" className="mt-3 text-bone-300">
+          &ldquo;{review.body}&rdquo;
+        </Text>
+      ) : null}
+      <View className="mt-3 border-t border-ink-700 pt-3">
+        <View className="flex-row items-center gap-1.5">
+          <Icon name="checkmark-circle" size={14} color={colors.positive} />
+          <Text variant="bodyMedium" className="text-[12px] text-positive">
+            Verified booking
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function TopBar({ onBack, floating }: { onBack: () => void; floating?: boolean }) {
   return (
     <View className={`px-3 ${floating ? "pt-1" : "pt-2"}`}>
@@ -422,4 +515,11 @@ function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+}
+
+/** "Jul 2026" from an ISO date; empty string on an unparseable value. */
+function reviewMonthYear(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }

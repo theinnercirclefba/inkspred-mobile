@@ -10,10 +10,16 @@ import { colors } from "../../../src/ui/tokens";
 import { useAuth } from "../../../src/lib/auth";
 import {
   getCustomerBookings,
+  type CustomerBooking,
   type CustomerBookings,
 } from "../../../src/features/bookings/data";
+import {
+  getReviewedAppointmentIds,
+  submitReview,
+} from "../../../src/lib/data/reviews";
 import { PlanPotCard } from "../../../src/features/bookings/PlanPotCard";
 import { AppointmentCard } from "../../../src/features/bookings/AppointmentCard";
+import { ReviewSheet } from "../../../src/features/bookings/ReviewSheet";
 import { RequestCard } from "../../../src/features/bookings/RequestCard";
 import { QuoteCard } from "../../../src/features/bookings/QuoteCard";
 
@@ -34,6 +40,13 @@ export default function Bookings() {
   const [status, setStatus] = useState<Status>("loading");
   const [refreshing, setRefreshing] = useState(false);
 
+  // Which past appointments already carry a review. Kept as a superset of what
+  // the server reports so an optimistic "just reviewed" survives a refresh.
+  const [reviewed, setReviewed] = useState<Set<string>>(new Set());
+  const [reviewTarget, setReviewTarget] = useState<CustomerBooking | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     if (!session) {
       setData(EMPTY);
@@ -43,8 +56,16 @@ export default function Bookings() {
     try {
       const result = await getCustomerBookings();
       // null = signed out mid-flight; treat as empty rather than error.
-      setData(result ?? EMPTY);
+      const bookings = result ?? EMPTY;
+      setData(bookings);
       setStatus("ready");
+      // Fetch which completed sessions already have a review, folding the result
+      // into any optimistic ids we already hold.
+      const pastIds = bookings.past.map((b) => b.id);
+      if (pastIds.length > 0) {
+        const serverReviewed = await getReviewedAppointmentIds(pastIds);
+        setReviewed((prev) => new Set([...prev, ...serverReviewed]));
+      }
     } catch {
       setStatus("error");
     }
@@ -62,6 +83,45 @@ export default function Bookings() {
     await load();
     setRefreshing(false);
   }, [load]);
+
+  const openReview = useCallback((booking: CustomerBooking) => {
+    setReviewError(null);
+    setReviewTarget(booking);
+  }, []);
+
+  const closeReview = useCallback(() => {
+    if (submitting) return;
+    setReviewTarget(null);
+    setReviewError(null);
+  }, [submitting]);
+
+  const handleSubmitReview = useCallback(
+    async (rating: number, body: string) => {
+      if (!reviewTarget) return;
+      setSubmitting(true);
+      setReviewError(null);
+      const result = await submitReview({
+        appointmentId: reviewTarget.id,
+        artistId: reviewTarget.artistId,
+        rating,
+        body,
+      });
+      setSubmitting(false);
+
+      // A pre-existing review (23505 → "already") is as good as a fresh one.
+      if (result.ok || result.error === "already") {
+        setReviewed((prev) => new Set(prev).add(reviewTarget.id)); // optimistic
+        setReviewTarget(null);
+        return;
+      }
+      setReviewError(
+        result.error === "signed_out"
+          ? "Please sign in again to leave your review."
+          : "We couldn't post your review just now. Please try again.",
+      );
+    },
+    [reviewTarget],
+  );
 
   /* Signed out — branded sign-in prompt. */
   if (!session) {
@@ -187,11 +247,27 @@ export default function Bookings() {
         {data.past.length > 0 ? (
           <Section title="Past">
             {data.past.map((booking) => (
-              <AppointmentCard key={booking.id} booking={booking} past />
+              <AppointmentCard
+                key={booking.id}
+                booking={booking}
+                past
+                reviewed={reviewed.has(booking.id)}
+                onLeaveReview={() => openReview(booking)}
+              />
             ))}
           </Section>
         ) : null}
       </ScrollView>
+
+      <ReviewSheet
+        visible={reviewTarget !== null}
+        artistName={reviewTarget?.artistName ?? ""}
+        piece={reviewTarget?.piece ?? ""}
+        saving={submitting}
+        error={reviewError}
+        onClose={closeReview}
+        onSubmit={handleSubmitReview}
+      />
     </Screen>
   );
 }

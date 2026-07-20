@@ -15,6 +15,11 @@ import {
 } from "../../../src/features/studio/data";
 import { updateMyStudio } from "../../../src/features/studio/actions";
 import { CreateStudioForm } from "../../../src/features/studio/CreateStudioForm";
+import { GoogleBadge } from "../../../src/features/reviews/GoogleBadge";
+import {
+  getExternalReviewConnection,
+  type ExternalReviewConnection,
+} from "../../../src/lib/data/reviews";
 
 type Status = "loading" | "ready" | "error";
 
@@ -151,12 +156,30 @@ function StudioProfileEditor({
   const [form, setForm] = useState<FormState>(() => toForm(studio));
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<{ text: string; ok: boolean } | null>(null);
+  const [google, setGoogle] = useState<ExternalReviewConnection | null>(null);
 
   // Re-seed the form whenever the underlying studio changes (e.g. after a
   // refetch), without clobbering an edit in progress on the same row.
   useEffect(() => {
     setForm(toForm(studio));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studio.id]);
+
+  // Read-only Google connection for the badge. Connecting stays on the web for
+  // now; here we just surface the live rating if one exists. Any error (incl.
+  // the table not existing yet) degrades softly to no badge.
+  useEffect(() => {
+    let alive = true;
+    getExternalReviewConnection([studio.id])
+      .then((c) => {
+        if (alive) setGoogle(c);
+      })
+      .catch(() => {
+        if (alive) setGoogle(null);
+      });
+    return () => {
+      alive = false;
+    };
   }, [studio.id]);
 
   const dirty =
@@ -231,6 +254,30 @@ function StudioProfileEditor({
       <Text variant="caption" className="mb-6 -mt-4 px-1 text-bone-500">
         Opens your live studio page in the browser.
       </Text>
+
+      {/* Google reviews — read-only badge. Connecting stays on the web. */}
+      <Text variant="label" className="mb-3 text-bone-500">
+        Google reviews
+      </Text>
+      {google ? (
+        <View className="mb-6 gap-2.5">
+          <GoogleBadge connection={google} />
+          <Text variant="caption" className="px-1 text-bone-500">
+            Your live Google rating shows on your public page. Manage or
+            reconnect it from the web dashboard.
+          </Text>
+        </View>
+      ) : (
+        <View className="mb-6 flex-row items-start gap-3 rounded-2xl border border-ink-700 bg-ink-900 p-4">
+          <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-xl border border-ink-600 bg-ink-800">
+            <Icon name="logo-google" size={16} color={colors.bone[300]} />
+          </View>
+          <Text variant="body" className="flex-1 text-[13px] text-bone-500">
+            Connect your Google reviews from the web dashboard to show your live
+            star rating on your InkSpred page.
+          </Text>
+        </View>
+      )}
 
       <Text variant="label" className="mb-3 text-bone-500">
         Studio details

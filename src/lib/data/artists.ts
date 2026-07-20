@@ -145,6 +145,14 @@ export interface ArtistPortfolioRow {
   sort_order: number;
 }
 
+/** A published in-app review, attributed to a "Verified client". */
+export interface ArtistReviewRow {
+  id: string;
+  rating: number;
+  body: string | null;
+  created_at: string;
+}
+
 export interface ArtistProfile {
   id: string;
   userId: string;
@@ -160,6 +168,14 @@ export interface ArtistProfile {
   followersCount: number | null;
   services: ArtistServiceRow[];
   portfolio: ArtistPortfolioRow[];
+  /** Published reviews, newest first. */
+  reviews: ArtistReviewRow[];
+  /** Mean published rating (1 dp), or null when the artist has none yet. */
+  ratingAvg: number | null;
+  /** Count of published reviews. */
+  reviewsCount: number;
+  /** The artist's studio id, for a shop-level Google connection lookup. */
+  studioId: string | null;
 }
 
 interface ArtistProfileRow {
@@ -177,6 +193,8 @@ interface ArtistProfileRow {
   followers_count: number | null;
   services: (ArtistServiceRow & { active: boolean })[] | null;
   portfolio_items: (ArtistPortfolioRow & { published: boolean; hidden: boolean })[] | null;
+  reviews: (ArtistReviewRow & { published: boolean })[] | null;
+  studio_members: { studios: { id: string } | { id: string }[] | null }[] | null;
 }
 
 /**
@@ -204,7 +222,9 @@ export async function getArtistByHandle(
         followers_count,
         user_id,
         services ( id, name, description, duration_min, price_from_pence, deposit_type, deposit_value, active ),
-        portfolio_items ( id, title, caption, style, placement, image_path, is_flash, flash_price_pence, sort_order, published, hidden )
+        portfolio_items ( id, title, caption, style, placement, image_path, is_flash, flash_price_pence, sort_order, published, hidden ),
+        reviews ( id, rating, body, created_at, published ),
+        studio_members ( studios ( id ) )
       `,
     )
     .eq("handle", handle.toLowerCase())
@@ -248,6 +268,35 @@ export async function getArtistByHandle(
     )
     .sort((a, b) => a.sort_order - b.sort_order);
 
+  const reviews = (row.reviews ?? [])
+    .filter((r) => r.published)
+    .map(
+      ({ id, rating, body, created_at }): ArtistReviewRow => ({
+        id,
+        rating,
+        body,
+        created_at,
+      }),
+    )
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+  const reviewsCount = reviews.length;
+  const ratingAvg =
+    reviewsCount === 0
+      ? null
+      : Math.round(
+          (reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount) * 10,
+        ) / 10;
+
+  // First studio this artist belongs to (studios embed is object-or-array).
+  const studioMember = (row.studio_members ?? []).find((m) => m.studios != null);
+  const studioEmbed = studioMember?.studios ?? null;
+  const studioId = studioEmbed
+    ? Array.isArray(studioEmbed)
+      ? (studioEmbed[0]?.id ?? null)
+      : studioEmbed.id
+    : null;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -263,6 +312,10 @@ export async function getArtistByHandle(
     followersCount: row.followers_count,
     services,
     portfolio,
+    reviews,
+    ratingAvg,
+    reviewsCount,
+    studioId,
   };
 }
 

@@ -61,6 +61,8 @@ export interface BookingPlan {
 
 export interface CustomerBooking {
   id: string;
+  /** The artist this booking is with — needed to leave a verified review. */
+  artistId: string;
   artistName: string;
   artistHandle: string;
   piece: string;
@@ -136,6 +138,7 @@ type Embed<T> = T[] | T | null;
 
 interface AppointmentRow {
   id: string;
+  artist_id: string;
   starts_at: string | null;
   status: AppointmentStatus;
   price_pence: number | null;
@@ -212,6 +215,7 @@ function mapBooking(row: AppointmentRow): CustomerBooking {
 
   return {
     id: row.id,
+    artistId: row.artist_id,
     artistName: artist?.display_name ?? "Your artist",
     artistHandle: artist?.handle ?? "",
     piece: service?.name ?? "Custom piece",
@@ -252,6 +256,7 @@ export async function getCustomerBookings(): Promise<CustomerBookings | null> {
       .select(
         `
           id,
+          artist_id,
           starts_at,
           status,
           price_pence,

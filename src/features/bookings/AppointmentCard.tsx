@@ -20,12 +20,19 @@ import type { CustomerBooking } from "./data";
 export function AppointmentCard({
   booking,
   past = false,
+  reviewed = false,
+  onLeaveReview,
 }: {
   booking: CustomerBooking;
   past?: boolean;
+  /** Past only: whether the customer has already reviewed this session. */
+  reviewed?: boolean;
+  /** Past + un-reviewed only: opens the leave-a-review sheet. */
+  onLeaveReview?: () => void;
 }) {
   const router = useRouter();
   const canOpen = booking.artistHandle.length > 0;
+  const canReview = past && !reviewed && typeof onLeaveReview === "function";
 
   return (
     <Pressable
@@ -70,7 +77,10 @@ export function AppointmentCard({
           {/* Status / deposit line */}
           <View className="mt-2.5 flex-row items-center gap-2">
             {past ? (
-              <Badge label="Completed" tone="neutral" />
+              <>
+                <Badge label="Completed" tone="neutral" />
+                {reviewed ? <Badge label="★ Reviewed" tone="gold" /> : null}
+              </>
             ) : booking.depositPaid ? (
               <Badge label="Deposit paid" tone="positive" />
             ) : booking.awaitingDeposit ? (
@@ -91,9 +101,24 @@ export function AppointmentCard({
               Pay your deposit from the app soon — we're finishing checkout here.
             </Text>
           ) : null}
+
+          {canReview ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Leave a review for ${booking.artistName}`}
+              onPress={onLeaveReview}
+              hitSlop={6}
+              className="mt-3 flex-row items-center gap-1.5 self-start rounded-xl border border-gold-400/60 bg-gold-400/10 px-3 py-2 active:opacity-80"
+            >
+              <Icon name="star-outline" size={14} color={colors.gold[300]} />
+              <Text variant="bodySemibold" className="text-[13px] text-gold-300">
+                Leave a review
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
-        {canOpen ? (
+        {canOpen && !canReview ? (
           <Icon name="chevron-forward" size={18} color={colors.bone[500]} />
         ) : null}
       </View>
