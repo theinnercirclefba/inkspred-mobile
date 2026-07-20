@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { Text } from "../../ui/Text";
 import { Icon, type IconName } from "../../ui/Icon";
@@ -7,6 +7,7 @@ import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
 import { colors } from "../../ui/tokens";
 import { useAuth, type UserRole } from "../../lib/auth";
+import { PRIVACY_URL, openExternal } from "../../lib/links";
 
 const ROLE_LABEL: Record<UserRole, string> = {
   customer: "Customer",
@@ -22,10 +23,9 @@ function monogram(name: string): string {
 }
 
 /**
- * The signed-in identity card + sign-out, shared across every role's account
- * surface so a signed-in user can always leave. Shows who's signed in, their
- * role, and the account controls that are coming next (rendered as disabled
- * "coming soon" rows rather than dead buttons).
+ * The signed-in identity card + account rows + sign-out, shared across every
+ * role's account surface. Every row here must DO something — placeholder
+ * "coming soon" rows are gone; anything not yet built simply doesn't render.
  */
 export function AccountPanel() {
   const { profile, signOut } = useAuth();
@@ -36,6 +36,15 @@ export function AccountPanel() {
     await signOut();
     router.replace("/(auth)/login");
   }
+
+  // Role-aware destination for profile editing; customers have no native
+  // profile editor yet, so the row is simply absent for them.
+  const editProfile =
+    profile?.role === "artist"
+      ? () => router.push("/(artist)/profile")
+      : profile?.role === "studio_admin"
+        ? () => router.push("/(studio)/(tabs)/shop")
+        : null;
 
   return (
     <View className="gap-5">
@@ -59,43 +68,68 @@ export function AccountPanel() {
       </View>
 
       <View className="rounded-2xl border border-ink-700 bg-ink-900">
-        <ComingRow icon="person-outline" label="Edit profile" first />
-        <ComingRow icon="card-outline" label="Payment methods" />
-        <ComingRow icon="notifications-outline" label="Notifications" />
-        <ComingRow icon="shield-checkmark-outline" label="Privacy & data" last />
+        {editProfile ? (
+          <ActionRow
+            icon="person-outline"
+            label="Edit profile"
+            onPress={editProfile}
+            first
+          />
+        ) : null}
+        <ActionRow
+          icon="shield-checkmark-outline"
+          label="Privacy & data"
+          caption="Policy, terms and your rights"
+          onPress={() => void openExternal(PRIVACY_URL)}
+          first={!editProfile}
+          last
+        />
       </View>
 
       <Button label="Sign out" variant="secondary" loading={signingOut} onPress={onSignOut} />
 
       <Text variant="caption" className="text-center text-bone-500">
-        Profile, payments and notification controls arrive in an upcoming build.
+        Payment method controls arrive with the payments rollout.
       </Text>
     </View>
   );
 }
 
-function ComingRow({
+function ActionRow({
   icon,
   label,
+  caption,
+  onPress,
   first,
   last,
 }: {
   icon: IconName;
   label: string;
+  caption?: string;
+  onPress: () => void;
   first?: boolean;
   last?: boolean;
 }) {
   return (
-    <View
-      className={`flex-row items-center gap-3 px-4 py-3.5 ${
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      className={`flex-row items-center gap-3 px-4 py-3.5 active:bg-ink-800 ${
         first ? "" : "border-t border-ink-700"
-      } ${last ? "" : ""}`}
+      } ${first ? "rounded-t-2xl" : ""} ${last ? "rounded-b-2xl" : ""}`}
     >
       <Icon name={icon} size={18} color={colors.bone[300]} />
-      <Text variant="body" className="flex-1 text-bone-100">
-        {label}
-      </Text>
-      <Badge label="Soon" tone="neutral" />
-    </View>
+      <View className="flex-1">
+        <Text variant="body" className="text-bone-100">
+          {label}
+        </Text>
+        {caption ? (
+          <Text variant="caption" className="mt-0.5">
+            {caption}
+          </Text>
+        ) : null}
+      </View>
+      <Icon name="chevron-forward" size={16} color={colors.bone[500]} />
+    </Pressable>
   );
 }
