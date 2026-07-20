@@ -26,6 +26,9 @@ import {
   type LatLng,
 } from "../../../src/lib/geo";
 import { DARK_MAP_STYLE } from "../../../src/features/find/mapStyle";
+import { InkDropsList } from "../../../src/features/ink-drop/InkDropsList";
+
+type FindMode = "map" | "drops";
 
 /** An artist that has a resolvable map position. */
 interface PinnedArtist {
@@ -47,6 +50,7 @@ export default function Find() {
   const [activeStyle, setActiveStyle] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
+  const [mode, setMode] = useState<FindMode>("map");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -170,6 +174,18 @@ export default function Find() {
     [selectedId, selectAndCentre, router],
   );
 
+  // Ink Drops mode — a simple column: the mode toggle over the drops browser.
+  if (mode === "drops") {
+    return (
+      <SafeAreaView edges={["top"]} className="flex-1 bg-ink-950">
+        <View className="px-4 pb-2 pt-2">
+          <ModeToggle mode={mode} onChange={setMode} />
+        </View>
+        <InkDropsList userLocation={userLocation} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <View className="flex-1 bg-ink-950">
       <MapView
@@ -221,6 +237,9 @@ export default function Find() {
         style={{ position: "absolute", left: 0, right: 0, top: 0 }}
       >
         <View className="px-4 pt-2" pointerEvents="box-none">
+          <View className="mb-2.5">
+            <ModeToggle mode={mode} onChange={setMode} />
+          </View>
           <View className="flex-row items-center gap-2 rounded-2xl border border-ink-700 bg-ink-900/95 px-3.5">
             <Icon name="search" size={18} color={colors.bone[500]} />
             <TextInput
@@ -322,6 +341,56 @@ export default function Find() {
           />
         )}
       </View>
+    </View>
+  );
+}
+
+/** The Map ⇄ Ink Drops segmented control that sits at the top of Find. */
+function ModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: FindMode;
+  onChange: (m: FindMode) => void;
+}) {
+  const segments: { key: FindMode; label: string; icon: IconName }[] = [
+    { key: "map", label: "Map", icon: "map-outline" },
+    { key: "drops", label: "Ink Drops", icon: "flash" },
+  ];
+  return (
+    <View className="flex-row items-center rounded-full border border-ink-700 bg-ink-900/95 p-1">
+      {segments.map((seg) => {
+        const active = seg.key === mode;
+        return (
+          <Pressable
+            key={seg.key}
+            onPress={() => onChange(seg.key)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2 ${
+              active ? "bg-bone-100" : ""
+            }`}
+          >
+            <Icon
+              name={seg.icon}
+              size={15}
+              color={
+                active
+                  ? colors.ink[950]
+                  : seg.key === "drops"
+                    ? colors.gold[400]
+                    : colors.bone[300]
+              }
+            />
+            <Text
+              variant="bodySemibold"
+              className={`text-[13px] ${active ? "text-ink-950" : "text-bone-300"}`}
+            >
+              {seg.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

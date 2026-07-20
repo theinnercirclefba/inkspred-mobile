@@ -32,6 +32,7 @@ const REQUESTS_HREF = "/(artist)/(tabs)/requests" as Href;
 const MESSAGES_HREF = "/(artist)/(tabs)/messages" as Href;
 const MONEY_HREF = "/(artist)/(tabs)/money" as Href;
 const PROFILE_HREF = "/(artist)/profile" as Href;
+const INK_DROP_HREF = "/(artist)/ink-drop" as Href;
 
 export default function Today() {
   const router = useRouter();
@@ -183,6 +184,26 @@ export default function Today() {
                 ))}
               </View>
             )}
+
+            {/* Ink Drop — fill a quiet day */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(INK_DROP_HREF)}
+              className="mb-7 flex-row items-center gap-3.5 rounded-2xl border border-gold-400/40 bg-gold-400/10 p-4 active:opacity-80"
+            >
+              <View className="h-11 w-11 items-center justify-center rounded-xl border border-gold-400/50 bg-gold-400/15">
+                <Icon name="flash" size={20} color={colors.gold[400]} />
+              </View>
+              <View className="min-w-0 flex-1">
+                <Text variant="bodySemibold" className="text-gold-300">
+                  Publish an Ink Drop
+                </Text>
+                <Text variant="caption" numberOfLines={1} className="mt-0.5 text-bone-500">
+                  Open a quiet day at a lower price — first to claim books it.
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={18} color={colors.gold[300]} />
+            </Pressable>
 
             {/* Snapshot stats */}
             <Text variant="label" className="mb-3 text-bone-500">
