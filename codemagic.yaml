@@ -32,6 +32,11 @@ workflows:
         # expo prebuild derives these from app.json's name "InkSpred".
         XCODE_WORKSPACE: "ios/InkSpred.xcworkspace"
         XCODE_SCHEME: "InkSpred"
+        # Web origin the app links out to (privacy, public profiles, deposit
+        # return). inkspred.co.uk isn't set up yet, so point at the live Vercel
+        # production URL so links resolve. Swap to the brand domain once it's
+        # registered — this is the ONE place that URL is set for the app.
+        EXPO_PUBLIC_WEB_URL: "https://inkspread-lewis-hulls-projects.vercel.app"
       node: 24
       # Apple 2026 rule: App Store uploads must be built with the iOS 26 SDK
       # (Xcode 26). This is now compatible — Expo SDK 54 (RN 0.81) ships an fmt
