@@ -16,7 +16,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "app.inkspred",
       "userInterfaceStyle": "dark",
       "usesAppleSignIn": true,
