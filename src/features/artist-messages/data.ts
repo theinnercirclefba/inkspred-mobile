@@ -21,6 +21,7 @@
  */
 
 import { supabase } from "../../lib/supabase";
+import { fetchBlockedUserIds } from "../moderation/data";
 import { dayLabel, timeLabel } from "../messages/data";
 import type {
   CreateQuoteInput,
@@ -244,7 +245,8 @@ export async function listArtistThreads(): Promise<ThreadSummary[]> {
     }
   }
 
-  return threadRows.map((r): ThreadSummary => {
+  const blocked = await fetchBlockedUserIds();
+  const summaries = threadRows.map((r): ThreadSummary => {
     const other = clients.get(r.id) ?? {
       name: "Client",
       subtitle: "Enquiry",
@@ -268,6 +270,12 @@ export async function listArtistThreads(): Promise<ThreadSummary[]> {
       awaitingReply: last ? last.sender_id !== userId : false,
     };
   });
+
+  // Hide conversations with users the caller has blocked (Apple UGC safety).
+  if (blocked.size === 0) return summaries;
+  return summaries.filter(
+    (s) => !s.other.userId || !blocked.has(s.other.userId),
+  );
 }
 
 /**

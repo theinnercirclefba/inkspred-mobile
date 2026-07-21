@@ -5,12 +5,7 @@ import { Text } from "../../../src/ui/Text";
 import { Icon, type IconName } from "../../../src/ui/Icon";
 import { colors } from "../../../src/ui/tokens";
 import { AccountPanel } from "../../../src/features/account/AccountPanel";
-import {
-  ACCOUNT_URL,
-  PRIVACY_URL,
-  TERMS_URL,
-  openExternal,
-} from "../../../src/lib/links";
+import { PRIVACY_URL, TERMS_URL, openExternal } from "../../../src/lib/links";
 
 /**
  * Studio settings — deliberately duplicate-free. Studio details are edited on
@@ -75,21 +70,10 @@ export default function Settings() {
           icon="document-text-outline"
           label="Terms of service"
           external
+          last
           onPress={() => openExternal(TERMS_URL)}
         />
-        <LinkRow
-          icon="trash-outline"
-          label="Delete account"
-          hint="Manage on the website"
-          external
-          last
-          onPress={() => openExternal(ACCOUNT_URL)}
-        />
       </View>
-
-      <Text variant="caption" className="mt-4 text-center text-bone-500">
-        Account deletion is handled on the InkSpred website.
-      </Text>
     </Screen>
   );
 }

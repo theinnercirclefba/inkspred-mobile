@@ -17,6 +17,7 @@ import { colors } from "../../../src/ui/tokens";
 import { publicPortfolioUrl } from "../../../src/lib/images";
 import { useAuth } from "../../../src/lib/auth";
 import { MessageBubble } from "../../../src/features/messages/MessageBubble";
+import { presentModerationMenu } from "../../../src/features/moderation/menu";
 import {
   getThread,
   sendMessage,
@@ -202,10 +203,27 @@ export default function ThreadScreen() {
       ? () => router.push(`/(customer)/artist/${other.handle}`)
       : null;
 
+  const otherUserId = other?.userId ?? null;
+  const onModerate = otherUserId
+    ? () =>
+        presentModerationMenu({
+          subjectLabel: other?.name ?? "this person",
+          targetType: "user",
+          targetId: otherUserId,
+          blockUserId: otherUserId,
+          onBlocked: () => router.back(),
+        })
+    : undefined;
+
   return (
     <View className="flex-1 bg-ink-950">
       <SafeAreaView edges={["top"]} className="bg-ink-950">
-        <ThreadHeader other={other} onBack={() => router.back()} onOpenProfile={openProfile} />
+        <ThreadHeader
+          other={other}
+          onBack={() => router.back()}
+          onOpenProfile={openProfile}
+          onMore={onModerate}
+        />
       </SafeAreaView>
 
       <KeyboardAvoidingView
@@ -263,10 +281,12 @@ function ThreadHeader({
   other,
   onBack,
   onOpenProfile,
+  onMore,
 }: {
   other: OtherParty | null;
   onBack: () => void;
   onOpenProfile: (() => void) | null;
+  onMore?: () => void;
 }) {
   const avatarUrl = publicPortfolioUrl(other?.avatarPath ?? null);
   return (
@@ -304,13 +324,22 @@ function ThreadHeader({
               </Text>
             ) : null}
           </View>
-          {onOpenProfile ? (
-            <Icon name="chevron-forward" size={18} color={colors.bone[500]} />
-          ) : null}
         </Pressable>
       ) : (
         <View className="flex-1" />
       )}
+
+      {onMore ? (
+        <Pressable
+          onPress={onMore}
+          accessibilityRole="button"
+          accessibilityLabel="More options"
+          hitSlop={8}
+          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+        >
+          <Icon name="ellipsis-horizontal" size={20} color={colors.bone[100]} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

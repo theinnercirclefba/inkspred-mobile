@@ -17,6 +17,7 @@ import { colors } from "../../../src/ui/tokens";
 import { useAuth } from "../../../src/lib/auth";
 import { MessageBubble } from "../../../src/features/artist-messages/MessageBubble";
 import { QuoteComposer } from "../../../src/features/artist-messages/QuoteComposer";
+import { presentModerationMenu } from "../../../src/features/moderation/menu";
 import {
   getArtistThread,
   sendMessage,
@@ -175,6 +176,18 @@ export default function ThreadScreen() {
 
   const canQuote = status === "ready" && !!artistId && !!customerId;
 
+  const otherUserId = other?.userId ?? null;
+  const onModerate = otherUserId
+    ? () =>
+        presentModerationMenu({
+          subjectLabel: other?.name ?? "this client",
+          targetType: "user",
+          targetId: otherUserId,
+          blockUserId: otherUserId,
+          onBlocked: () => router.back(),
+        })
+    : undefined;
+
   if (status === "loading") {
     return (
       <View className="flex-1 bg-ink-950">
@@ -237,6 +250,7 @@ export default function ThreadScreen() {
           other={other}
           onBack={() => router.back()}
           onQuote={canQuote ? () => setQuoteOpen(true) : null}
+          onMore={onModerate}
         />
       </SafeAreaView>
 
@@ -308,10 +322,12 @@ function ThreadHeader({
   other,
   onBack,
   onQuote,
+  onMore,
 }: {
   other: OtherParty | null;
   onBack: () => void;
   onQuote: (() => void) | null;
+  onMore?: () => void;
 }) {
   return (
     <View className="flex-row items-center gap-2 border-b border-ink-800 px-3 py-2">
@@ -358,6 +374,18 @@ function ThreadHeader({
           <Text variant="bodySemibold" className="text-[13px] text-gold-300">
             Quote
           </Text>
+        </Pressable>
+      ) : null}
+
+      {onMore ? (
+        <Pressable
+          onPress={onMore}
+          accessibilityRole="button"
+          accessibilityLabel="More options"
+          hitSlop={8}
+          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+        >
+          <Icon name="ellipsis-horizontal" size={20} color={colors.bone[100]} />
         </Pressable>
       ) : null}
     </View>

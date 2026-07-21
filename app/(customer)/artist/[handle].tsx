@@ -35,6 +35,7 @@ import {
   type ExternalReviewConnection,
 } from "../../../src/lib/data/reviews";
 import { GoogleBadge } from "../../../src/features/reviews/GoogleBadge";
+import { presentModerationMenu } from "../../../src/features/moderation/menu";
 import { useAuth } from "../../../src/lib/auth";
 
 type Status = "loading" | "ready" | "notfound" | "error";
@@ -157,7 +158,22 @@ export default function ArtistProfileScreen() {
             style={{ backgroundColor: colors.oxblood[600], opacity: 0.18 }}
           />
           <SafeAreaView edges={["top"]}>
-            <TopBar onBack={() => router.back()} floating />
+            <TopBar
+              onBack={() => router.back()}
+              floating
+              onMore={
+                session
+                  ? () =>
+                      presentModerationMenu({
+                        subjectLabel: artist.displayName,
+                        targetType: "artist",
+                        targetId: artist.id,
+                        blockUserId: artist.userId,
+                        onBlocked: () => router.back(),
+                      })
+                  : undefined
+              }
+            />
             <View className="px-5 pt-4">
               {avatarUrl ? (
                 <Image
@@ -462,9 +478,19 @@ function ReviewRow({ review }: { review: ArtistReviewRow }) {
   );
 }
 
-function TopBar({ onBack, floating }: { onBack: () => void; floating?: boolean }) {
+function TopBar({
+  onBack,
+  floating,
+  onMore,
+}: {
+  onBack: () => void;
+  floating?: boolean;
+  onMore?: () => void;
+}) {
   return (
-    <View className={`px-3 ${floating ? "pt-1" : "pt-2"}`}>
+    <View
+      className={`flex-row items-center justify-between px-3 ${floating ? "pt-1" : "pt-2"}`}
+    >
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
@@ -473,6 +499,17 @@ function TopBar({ onBack, floating }: { onBack: () => void; floating?: boolean }
       >
         <Icon name="chevron-back" size={20} color={colors.bone[100]} />
       </Pressable>
+      {onMore ? (
+        <Pressable
+          onPress={onMore}
+          accessibilityRole="button"
+          accessibilityLabel="More options"
+          hitSlop={8}
+          className="h-10 w-10 items-center justify-center rounded-full border border-ink-700 bg-ink-900/80"
+        >
+          <Icon name="ellipsis-horizontal" size={20} color={colors.bone[100]} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "../supabase";
+import { fetchBlockedUserIds } from "../../features/moderation/data";
 
 /* ── Directory ──────────────────────────────────────────────────────── */
 
@@ -35,6 +36,7 @@ interface CoverPortfolioRow {
 
 interface DirectoryArtistRow {
   id: string;
+  user_id: string;
   handle: string;
   display_name: string;
   city: string | null;
@@ -82,6 +84,7 @@ export async function listPublishedArtists(): Promise<DirectoryArtist[]> {
     .select(
       `
         id,
+        user_id,
         handle,
         display_name,
         city,
@@ -103,7 +106,12 @@ export async function listPublishedArtists(): Promise<DirectoryArtist[]> {
 
   const rows = data as unknown as DirectoryArtistRow[];
 
-  return rows.map((row) => ({
+  // Hide artists the caller has blocked from discovery (Apple UGC safety).
+  const blocked = await fetchBlockedUserIds();
+  const visible =
+    blocked.size === 0 ? rows : rows.filter((r) => !blocked.has(r.user_id));
+
+  return visible.map((row) => ({
     id: row.id,
     handle: row.handle,
     displayName: row.display_name,

@@ -7,7 +7,7 @@ import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/Badge";
 import { colors } from "../../ui/tokens";
 import { useAuth, type UserRole } from "../../lib/auth";
-import { PRIVACY_URL, openExternal } from "../../lib/links";
+import { ACCOUNT_URL, PRIVACY_URL, openExternal } from "../../lib/links";
 
 const ROLE_LABEL: Record<UserRole, string> = {
   customer: "Customer",
@@ -82,6 +82,12 @@ export function AccountPanel() {
           caption="Policy, terms and your rights"
           onPress={() => void openExternal(PRIVACY_URL)}
           first={!editProfile}
+        />
+        <ActionRow
+          icon="trash-outline"
+          label="Delete account"
+          caption="Manage on the InkSpred website"
+          onPress={() => void openExternal(ACCOUNT_URL)}
           last
         />
       </View>
