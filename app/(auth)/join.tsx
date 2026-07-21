@@ -52,11 +52,11 @@ export default function Join() {
         <Wordmark size={34} className="mb-8" />
 
         <Text variant="display" className="mb-1">
-          Create your account
+          Welcome to InkSpred
         </Text>
         <Text variant="body" className="mb-8 text-bone-500">
-          One account, whichever side of the chair you sit on. Choose how you'll
-          use InkSpred.
+          How will you use InkSpred? Pick the one that fits — you can always sign
+          in below if you're already with us.
         </Text>
 
         <SocialAuthBlock dividerLabel="or use email" />

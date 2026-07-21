@@ -30,8 +30,12 @@ export default function Index() {
     );
   }
 
+  // Signed out → the role-first welcome (Customer / Artist / Studio). Returning
+  // users never see this: their session persists in AsyncStorage, so a cold
+  // start resolves straight to their role home below. The picker cross-links to
+  // sign-in for anyone who already has an account.
   if (!session) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(auth)/join" />;
   }
 
   // Signed in but the profile row hasn't been created yet — typically a social
