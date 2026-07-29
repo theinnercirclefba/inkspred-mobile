@@ -21,6 +21,7 @@
  */
 
 import { supabase } from "../../lib/supabase";
+import { maybeRequestReview } from "../../lib/reviewPrompt";
 import type { RequestStatus } from "../bookings/data";
 
 export interface RequestActionResult {
@@ -151,6 +152,9 @@ export async function acceptRequest(id: string): Promise<RequestActionResult> {
   if (updateError) return { ok: false, authenticated: true };
 
   await ensureAppointment(request);
+  // Peak-happiness moment: the artist just landed a booking. Ask for a review
+  // (heavily self-throttled; never nags, never throws).
+  void maybeRequestReview();
   return { ok: true, authenticated: true };
 }
 

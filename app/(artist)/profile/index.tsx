@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, TextInput, View } from "react-native";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../../../src/ui/Text";
@@ -9,6 +9,7 @@ import { Button } from "../../../src/ui/Button";
 import { Artwork, monogram } from "../../../src/ui/Artwork";
 import { colors } from "../../../src/ui/tokens";
 import { publicPortfolioUrl } from "../../../src/lib/images";
+import { publicArtistUrl } from "../../../src/lib/links";
 import { useAuth } from "../../../src/lib/auth";
 import { Chip } from "../../../src/features/book/Chip";
 import { ProfileHeader } from "../../../src/features/artist-profile/ProfileHeader";
@@ -354,20 +355,42 @@ export default function ProfileHub() {
           />
         </View>
 
-        {/* View public page */}
+        {/* Share booking link + view public page */}
         {artist?.published ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() =>
-              router.push(`/(customer)/artist/${artist.handle}` as Href)
-            }
-            className="flex-row items-center justify-center gap-2 rounded-xl border border-ink-600 bg-ink-800 py-3.5 active:opacity-80"
-          >
-            <Icon name="open-outline" size={16} color={colors.gold[300]} />
-            <Text variant="bodyMedium" className="text-[14px] text-gold-300">
-              View public page
-            </Text>
-          </Pressable>
+          <View className="gap-2.5">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share your booking link"
+              onPress={() => {
+                if (!artist.handle) return;
+                const url = publicArtistUrl(artist.handle);
+                Share.share({
+                  message: `Book your next tattoo with me on InkSpred 🖤\n${url}`,
+                  url,
+                }).catch(() => {
+                  // user dismissed the sheet, or sharing is unavailable — no-op
+                });
+              }}
+              className="flex-row items-center justify-center gap-2 rounded-xl border border-gold-400/60 bg-gold-400/15 py-3.5 active:opacity-80"
+            >
+              <Icon name="share-outline" size={16} color={colors.gold[300]} />
+              <Text variant="bodyMedium" className="text-[14px] text-gold-300">
+                Share your booking link
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() =>
+                router.push(`/(customer)/artist/${artist.handle}` as Href)
+              }
+              className="flex-row items-center justify-center gap-2 rounded-xl border border-ink-600 bg-ink-800 py-3.5 active:opacity-80"
+            >
+              <Icon name="open-outline" size={16} color={colors.bone[300]} />
+              <Text variant="bodyMedium" className="text-[14px] text-bone-300">
+                View public page
+              </Text>
+            </Pressable>
+          </View>
         ) : (
           <View className="flex-row items-center justify-center gap-2 rounded-xl border border-ink-700 bg-ink-900 py-3.5">
             <Icon name="eye-off-outline" size={16} color={colors.bone[500]} />

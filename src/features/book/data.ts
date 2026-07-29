@@ -18,6 +18,7 @@
  */
 
 import { supabase } from "../../lib/supabase";
+import { maybeRequestReview } from "../../lib/reviewPrompt";
 
 /** Matches a canonical v4-shaped UUID — guards the optional service_id FK. */
 const UUID_RE =
@@ -96,5 +97,8 @@ export async function createBookingRequest(
     return { ok: false, error: "save_failed" };
   }
 
+  // Peak-happiness moment: the customer just reached an artist through the app.
+  // Ask for a review (heavily self-throttled; never nags, never throws).
+  void maybeRequestReview();
   return { ok: true, requestId: (data as { id: string }).id };
 }
