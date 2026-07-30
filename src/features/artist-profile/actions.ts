@@ -40,6 +40,69 @@ async function currentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
+/* ── Create (self-serve onboarding) ──────────────────────────────────── */
+
+export interface CreateArtistInput {
+  displayName: string;
+  /** Desired handle (already handlified by the form); may collide. */
+  handle: string;
+  city: string;
+  styles: string[];
+}
+
+export type CreateArtistResult =
+  | { ok: true; handle: string }
+  | { ok: false; error: "not_authenticated" | "invalid" | "already_artist" | "save_failed" };
+
+/**
+ * Create the signed-in user's OWN artist profile — the self-serve counterpart
+ * of the web onboarding wizard, and the fix for the native dead-end where an
+ * artist-role user had NO way to make an artists row in the app.
+ *
+ * Publishes immediately: the whole point is "bookable in minutes", and the
+ * portfolio screen (with Instagram import) is the very next step. RLS
+ * (artists_manage_own) guarantees user_id = auth.uid(). One artist per user is
+ * enforced by the user_id unique constraint — a 23505 on it maps to
+ * `already_artist` so a double-tap or stale screen degrades honestly.
+ * Handle collisions re-probe with a numeric suffix, mirroring the studio
+ * roster's findFreeHandle behaviour.
+ */
+export async function createArtistProfile(
+  input: CreateArtistInput,
+): Promise<CreateArtistResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "not_authenticated" };
+
+  const displayName = input.displayName.trim();
+  const base = input.handle.trim();
+  if (!displayName || base.length < 3) return { ok: false, error: "invalid" };
+
+  // Up to a handful of suffixed attempts on handle collision; user_id
+  // collision (already an artist) exits immediately.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const handle =
+      attempt === 0 ? base : `${base}-${attempt + 1}`.slice(0, 30);
+    const { error } = await supabase.from("artists").insert({
+      user_id: userId,
+      handle,
+      display_name: displayName,
+      city: input.city.trim() || null,
+      styles: input.styles,
+      published: true,
+    });
+    if (!error) return { ok: true, handle };
+    if (error.code === UNIQUE_VIOLATION) {
+      // user_id unique → already an artist; handle unique → try a suffix.
+      if ((error.message ?? "").includes("artists_user_id")) {
+        return { ok: false, error: "already_artist" };
+      }
+      continue;
+    }
+    return { ok: false, error: "save_failed" };
+  }
+  return { ok: false, error: "save_failed" };
+}
+
 /* ── Profile ─────────────────────────────────────────────────────────── */
 
 export interface ProfilePatch {

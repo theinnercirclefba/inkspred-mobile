@@ -9,6 +9,7 @@ import { Badge } from "../../../src/ui/Badge";
 import { colors } from "../../../src/ui/tokens";
 import { formatGBP } from "../../../src/lib/money";
 import { AccountPanel } from "../../../src/features/account/AccountPanel";
+import { CreateArtistForm } from "../../../src/features/artist-profile/CreateArtistForm";
 import { useAuth } from "../../../src/lib/auth";
 import {
   getArtistContext,
@@ -133,7 +134,18 @@ export default function Today() {
           </Text>
         </View>
 
-        {status === "error" ? (
+        {status === "loading" ? (
+          // Skeleton while the first fetch resolves — never flash a false
+          // "nothing booked / £0" at an artist with a real day ahead.
+          <View className="gap-4">
+            <View className="h-24 rounded-2xl bg-ink-800" />
+            <View className="flex-row gap-3">
+              <View className="h-20 flex-1 rounded-2xl bg-ink-800" />
+              <View className="h-20 flex-1 rounded-2xl bg-ink-800" />
+            </View>
+            <View className="h-40 rounded-2xl bg-ink-800" />
+          </View>
+        ) : status === "error" ? (
           <View className="mb-8 items-center rounded-2xl border border-ink-700 bg-ink-900 px-6 py-10">
             <View className="mb-4 h-14 w-14 items-center justify-center rounded-2xl border border-ink-700 bg-ink-800">
               <Icon name="cloud-offline-outline" size={24} color={colors.bone[500]} />
@@ -146,17 +158,17 @@ export default function Today() {
             </Text>
           </View>
         ) : role === "artist" && !isArtist ? (
-          <View className="mb-8 items-center rounded-2xl border border-ink-700 bg-ink-900 px-6 py-10">
-            <View className="mb-4 h-14 w-14 items-center justify-center rounded-2xl border border-ink-700 bg-ink-800">
-              <Icon name="brush-outline" size={24} color={colors.gold[400]} />
-            </View>
-            <Text variant="display" className="mb-2 text-center text-xl">
-              Finish your studio setup
-            </Text>
-            <Text variant="body" className="max-w-[280px] text-center text-bone-500">
-              Once your artist profile is live, your sessions, deposits and
-              enquiries appear here each morning.
-            </Text>
+          // No artists row yet — this IS onboarding: create the profile right
+          // here on the landing tab, then reload into the real dashboard.
+          <View className="mb-8">
+            <CreateArtistForm
+              onCreated={() => {
+                void load();
+                // Straight to the portfolio — the Instagram import lives there,
+                // so "create profile" flows directly into "pull in your work".
+                router.push("/(artist)/profile/portfolio" as Href);
+              }}
+            />
           </View>
         ) : (
           <>

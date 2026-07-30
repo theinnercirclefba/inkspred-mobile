@@ -240,8 +240,8 @@ export default function Requests() {
       <Screen padded={false}>
         <EmptyState
           icon="brush-outline"
-          title="Finish your studio setup"
-          body="Once your artist profile is live, booking enquiries from clients will appear here ready to accept."
+          title="Set up your artist profile"
+          body="Create your profile on the Today tab — booking enquiries from clients will appear here ready to accept."
         />
       </Screen>
     );

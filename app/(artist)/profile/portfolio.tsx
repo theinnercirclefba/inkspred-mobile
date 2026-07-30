@@ -23,6 +23,7 @@ import {
 } from "../../../src/features/artist-profile/actions";
 import { pickMultipleImages } from "../../../src/features/artist-profile/pickImage";
 import { uploadPortfolioImage } from "../../../src/lib/portfolioUpload";
+import { InstagramCard } from "../../../src/features/instagram/InstagramCard";
 
 type Status = "loading" | "ready" | "notartist" | "error";
 
@@ -187,31 +188,43 @@ export default function PortfolioScreen() {
       ) : status === "notartist" || status === "error" ? (
         <ErrorState notartist={status === "notartist"} />
       ) : items.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="mb-4 h-14 w-14 items-center justify-center rounded-2xl border border-ink-700 bg-ink-900">
-            <Icon name="images-outline" size={24} color={colors.gold[400]} />
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* The fast path for a fresh portfolio: pull it straight from IG. */}
+          <InstagramCard onImported={() => void load()} />
+          <View className="mt-8 items-center px-4">
+            <View className="mb-4 h-14 w-14 items-center justify-center rounded-2xl border border-ink-700 bg-ink-900">
+              <Icon name="images-outline" size={24} color={colors.gold[400]} />
+            </View>
+            <Text variant="display" className="mb-2 text-center text-xl">
+              Show your best work
+            </Text>
+            <Text variant="body" className="mb-6 max-w-[280px] text-center text-bone-500">
+              Import from Instagram above, or upload photos from your camera
+              roll. The first pieces become the cover clients see in the
+              directory.
+            </Text>
+            <Button
+              label={uploading ? "Uploading…" : "Upload photos"}
+              variant="primary"
+              block={false}
+              loading={uploading}
+              onPress={onUpload}
+            />
           </View>
-          <Text variant="display" className="mb-2 text-center text-xl">
-            Show your best work
-          </Text>
-          <Text variant="body" className="mb-6 max-w-[280px] text-center text-bone-500">
-            Upload photos from your camera roll. The first pieces become the cover
-            clients see in the directory.
-          </Text>
-          <Button
-            label={uploading ? "Uploading…" : "Upload photos"}
-            variant="primary"
-            block={false}
-            loading={uploading}
-            onPress={onUpload}
-          />
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, paddingTop: 4 }}
           showsVerticalScrollIndicator={false}
         >
+          <View className="mb-3">
+            <InstagramCard onImported={() => void load()} />
+          </View>
           <View className="gap-3">
             {items.map((item, index) => (
               <PortfolioRow
@@ -361,11 +374,11 @@ function ErrorState({ notartist }: { notartist: boolean }) {
         />
       </View>
       <Text variant="display" className="mb-2 text-center text-xl">
-        {notartist ? "Finish your studio setup" : "Couldn't load portfolio"}
+        {notartist ? "Set up your artist profile" : "Couldn't load portfolio"}
       </Text>
       <Text variant="body" className="max-w-[280px] text-center text-bone-500">
         {notartist
-          ? "Once your artist profile is live you can manage your portfolio here."
+          ? "Create your profile on the Today tab, then manage your portfolio here."
           : "Something went wrong. Please go back and try again."}
       </Text>
     </View>

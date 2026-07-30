@@ -110,7 +110,7 @@ export default function Login() {
 
         <Button
           label="Sign in with email"
-          variant="secondary"
+          variant="primary"
           className="mt-6"
           loading={submitting}
           onPress={onSubmit}

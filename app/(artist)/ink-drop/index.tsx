@@ -147,7 +147,7 @@ export default function InkDropPublish() {
     }
 
     if (result.error === "not_artist") {
-      Alert.alert("Finish your studio setup", "Publish your artist profile first.");
+      Alert.alert("Set up your artist profile", "Create your profile on the Today tab first.");
     } else if (result.error === "invalid_input") {
       Alert.alert("Check the details", "Pick a date, slot and a valid drop price.");
     } else {
@@ -228,8 +228,8 @@ export default function InkDropPublish() {
       ) : status === "notartist" ? (
         <Guard
           icon="brush-outline"
-          title="Finish your studio setup"
-          body="Once your artist profile is live you can publish Ink Drops here."
+          title="Set up your artist profile"
+          body="Create your profile on the Today tab, then publish Ink Drops here."
         />
       ) : status === "error" ? (
         <Guard

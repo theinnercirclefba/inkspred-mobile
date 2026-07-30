@@ -189,11 +189,11 @@ export default function ProfileHub() {
             />
           </View>
           <Text variant="display" className="mb-2 text-center text-xl">
-            {notartist ? "Finish your studio setup" : "Couldn't load your profile"}
+            {notartist ? "Set up your artist profile" : "Couldn't load your profile"}
           </Text>
           <Text variant="body" className="max-w-[280px] text-center text-bone-500">
             {notartist
-              ? "Once your artist profile is live you can edit it here."
+              ? "Create your profile on the Today tab, then edit it here."
               : "Something went wrong. Please go back and try again."}
           </Text>
         </View>
