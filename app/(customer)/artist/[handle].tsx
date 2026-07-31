@@ -240,15 +240,6 @@ export default function ArtistProfileScreen() {
                 </View>
               ) : null}
 
-              {artist.financeEnabled ? (
-                <View className="mt-3 flex-row items-center gap-1.5">
-                  <Icon name="sparkles-outline" size={14} color={colors.gold[400]} />
-                  <Text variant="bodyMedium" className="text-[13px] text-gold-300">
-                    Spread the cost with InkSpred Plans
-                  </Text>
-                </View>
-              ) : null}
-
               {google ? <GoogleBadge connection={google} className="mt-3" /> : null}
 
               {artist.bio ? (

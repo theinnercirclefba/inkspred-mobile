@@ -9,12 +9,14 @@
 export type SizeKey = "S" | "M" | "L" | "XL";
 
 /**
- * How the customer would LIKE to pay once the artist confirms. This is a
- * preference only — nothing is charged from the app, and the request row has no
- * column for it, so it is never persisted. It shapes the review copy and lets
- * us set expectations honestly ("a preference, not a charge").
+ * How the customer would LIKE to handle payment once the artist confirms. This
+ * is a preference only — nothing is charged from the app at request time, and
+ * the request row has no column for it, so it is never persisted. It shapes the
+ * review copy and lets us set expectations honestly ("a preference, not a
+ * charge"). Only options the app actually supports today are offered — the
+ * saving-plan and Klarna preferences return when those products ship.
  */
-export type PayPref = "deposit" | "plan" | "klarna";
+export type PayPref = "deposit" | "discuss";
 
 export interface SizeOption {
   key: SizeKey;

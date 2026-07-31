@@ -14,8 +14,7 @@ import {
 
 const PAY_PREF_LABEL: Record<PayPref, string> = {
   deposit: "Deposit now, balance on the day",
-  plan: "InkSpred Plan — saving ahead",
-  klarna: "Split it with Klarna (arriving)",
+  discuss: "Talk it through with the artist first",
 };
 
 /**

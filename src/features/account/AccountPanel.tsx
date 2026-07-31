@@ -93,10 +93,6 @@ export function AccountPanel() {
       </View>
 
       <Button label="Sign out" variant="secondary" loading={signingOut} onPress={onSignOut} />
-
-      <Text variant="caption" className="text-center text-bone-500">
-        Payment method controls arrive with the payments rollout.
-      </Text>
     </View>
   );
 }

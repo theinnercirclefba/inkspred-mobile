@@ -1,4 +1,5 @@
-import { View, Pressable } from "react-native";
+import { useState } from "react";
+import { View, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
@@ -6,22 +7,24 @@ import { Badge } from "../../ui/Badge";
 import { colors } from "../../ui/tokens";
 import { formatGBP } from "../../lib/money";
 import { formatDateTime } from "./format";
+import { payDeposit } from "./payDeposit";
 import type { CustomerBooking } from "./data";
 
 /**
  * A single upcoming or past appointment row: artist, piece, date/time and
  * deposit status. `past` mutes the icon and shows a "Completed" chip.
  *
- * Deposit checkout is a server-action-only flow on the web (Stripe), not yet
- * callable from native — so an awaiting-deposit booking shows an honest "pay
- * from the app soon" note beneath the amount rather than a button that can't
- * work. The row taps through to the artist's profile.
+ * An awaiting-deposit booking carries a live "Pay deposit" button — Stripe
+ * Checkout in an in-app browser sheet via {@link payDeposit}; on success the
+ * webhook records the payment and `onPaid` refetches so the card flips to
+ * "Deposit paid" from server truth. The row taps through to the artist.
  */
 export function AppointmentCard({
   booking,
   past = false,
   reviewed = false,
   onLeaveReview,
+  onPaid,
 }: {
   booking: CustomerBooking;
   past?: boolean;
@@ -29,10 +32,25 @@ export function AppointmentCard({
   reviewed?: boolean;
   /** Past + un-reviewed only: opens the leave-a-review sheet. */
   onLeaveReview?: () => void;
+  /** Called after a successful deposit payment so the list refetches. */
+  onPaid?: () => void;
 }) {
   const router = useRouter();
+  const [paying, setPaying] = useState(false);
   const canOpen = booking.artistHandle.length > 0;
   const canReview = past && !reviewed && typeof onLeaveReview === "function";
+
+  async function onPayDeposit() {
+    if (paying) return;
+    setPaying(true);
+    const result = await payDeposit(booking.id);
+    setPaying(false);
+    if (result.ok) {
+      onPaid?.();
+    } else if (!result.cancelled && result.error) {
+      Alert.alert("Deposit not taken", result.error);
+    }
+  }
 
   return (
     <Pressable
@@ -97,9 +115,27 @@ export function AppointmentCard({
           </View>
 
           {!past && booking.awaitingDeposit ? (
-            <Text variant="caption" className="mt-1.5">
-              Pay your deposit from the app soon — we're finishing checkout here.
-            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Pay your ${formatGBP(booking.depositPence)} deposit`}
+              onPress={onPayDeposit}
+              disabled={paying}
+              hitSlop={6}
+              className={`mt-3 flex-row items-center gap-2 self-start rounded-xl px-4 py-2.5 ${
+                paying ? "bg-oxblood-500/60" : "bg-oxblood-500 active:opacity-85"
+              }`}
+            >
+              {paying ? (
+                <ActivityIndicator size="small" color={colors.bone[100]} />
+              ) : (
+                <Icon name="lock-closed" size={14} color={colors.bone[100]} />
+              )}
+              <Text variant="bodySemibold" className="text-[13px] text-bone-100">
+                {paying
+                  ? "Opening secure checkout…"
+                  : `Pay deposit · ${formatGBP(booking.depositPence)}`}
+              </Text>
+            </Pressable>
           ) : null}
 
           {canReview ? (

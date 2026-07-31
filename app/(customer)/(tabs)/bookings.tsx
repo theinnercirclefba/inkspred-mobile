@@ -135,8 +135,8 @@ export default function Bookings() {
             Sign in to see your bookings
           </Text>
           <Text variant="body" className="mb-6 max-w-[280px] text-center text-bone-500">
-            Your upcoming sessions, spread-the-cost pots and requests live here
-            once you're signed in.
+            Your upcoming sessions, deposits and requests live here once
+            you&rsquo;re signed in.
           </Text>
           <Button
             label="Sign in"
@@ -231,7 +231,11 @@ export default function Bookings() {
         {data.upcoming.length > 0 ? (
           <Section title="Upcoming" hint={`${data.upcoming.length} scheduled`}>
             {data.upcoming.map((booking) => (
-              <AppointmentCard key={booking.id} booking={booking} />
+              <AppointmentCard
+                key={booking.id}
+                booking={booking}
+                onPaid={() => void load()}
+              />
             ))}
           </Section>
         ) : null}
