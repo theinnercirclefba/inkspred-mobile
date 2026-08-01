@@ -17,6 +17,7 @@ import {
   listMyAvailability,
 } from "../../../src/features/artist-profile/data";
 import { setWeekdayAvailability } from "../../../src/features/artist-profile/actions";
+import { CalendarImportSection } from "../../../src/features/calendar-import/CalendarImportSection";
 
 type Status = "loading" | "ready" | "notartist" | "error";
 
@@ -214,6 +215,8 @@ export default function AvailabilityScreen() {
               );
             })}
           </View>
+
+          <CalendarImportSection />
         </ScrollView>
       )}
 

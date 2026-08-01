@@ -224,7 +224,7 @@ export async function getArtistContext(): Promise<ArtistContext | null> {
  * from reading arbitrary `users` rows, so this returns whatever is permitted
  * and callers fall back to a neutral label for the rest.
  */
-async function resolveCustomerNames(ids: string[]): Promise<Map<string, string>> {
+export async function resolveCustomerNames(ids: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   const unique = Array.from(new Set(ids.filter(Boolean)));
   if (unique.length === 0) return map;

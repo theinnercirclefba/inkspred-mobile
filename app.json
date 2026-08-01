@@ -54,6 +54,12 @@
         {
           "photosPermission": "InkSpred lets you upload tattoo reference photos and portfolio images from your photo library."
         }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "InkSpred imports busy times from your calendar so clients can never double-book you."
+        }
       ]
     ],
     "experiments": {
