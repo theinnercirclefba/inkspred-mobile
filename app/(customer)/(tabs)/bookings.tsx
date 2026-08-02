@@ -215,7 +215,7 @@ export default function Bookings() {
             hint={data.quotes.length === 1 ? "1 to review" : `${data.quotes.length} to review`}
           >
             {data.quotes.map((quote) => (
-              <QuoteCard key={quote.id} quote={quote} />
+              <QuoteCard key={quote.id} quote={quote} onChanged={() => void load()} />
             ))}
           </Section>
         ) : null}

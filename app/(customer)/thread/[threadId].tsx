@@ -257,6 +257,7 @@ export default function ThreadScreen() {
                     ? quotesById[item.message.quoteId] ?? null
                     : null
                 }
+                onQuoteChanged={() => void load(false)}
               />
             )
           }

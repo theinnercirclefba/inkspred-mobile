@@ -14,9 +14,12 @@ import type { QuoteView, ThreadMessage } from "./types";
 export function MessageBubble({
   message,
   quote,
+  onQuoteChanged,
 }: {
   message: ThreadMessage;
   quote: QuoteView | null;
+  /** Refreshes the thread after an in-card quote accept/decline. */
+  onQuoteChanged?: () => void;
 }) {
   const { mine } = message;
   const hasText = message.body.trim().length > 0;
@@ -27,7 +30,7 @@ export function MessageBubble({
     return (
       <View className={`w-full ${mine ? "items-end" : "items-start"}`}>
         <View className="w-[88%]">
-          <QuoteCard quote={quote} />
+          <QuoteCard quote={quote} onChanged={onQuoteChanged} />
           <Text
             variant="caption"
             className={`mt-1 text-bone-500 ${mine ? "text-right" : "text-left"}`}

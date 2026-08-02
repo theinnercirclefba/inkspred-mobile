@@ -1,23 +1,82 @@
-import { View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, View } from "react-native";
 import { Text } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { Badge } from "../../ui/Badge";
 import { colors } from "../../ui/tokens";
 import { formatGBP } from "../../lib/money";
+import { respondToQuote } from "../quotes/respond";
 import { formatDate } from "./format";
 import type { CustomerQuote } from "./data";
 
 /**
- * A read-only quote an artist has sent — price, deposit, optional session count
- * and hold-expiry.
- *
- * Accepting / declining a quote is a server-action-only flow on the web (it
- * materialises a confirmed appointment through the service role), and isn't
- * callable from native yet. So this card is honest: it shows the figures and
- * points the customer to respond from the quote in their messages on the web
- * for now, rather than an Accept button that can't complete.
+ * A quote an artist has sent, on the My Bookings screen — price, deposit,
+ * optional session count and hold-expiry, with real Accept / Decline actions
+ * (the same server core as the web: accepting materialises the confirmed
+ * appointment, ready for its deposit right above on this screen). Pass
+ * `onChanged` so the screen refreshes once a response lands.
  */
-export function QuoteCard({ quote }: { quote: CustomerQuote }) {
+export function QuoteCard({
+  quote,
+  onChanged,
+}: {
+  quote: CustomerQuote;
+  onChanged?: () => void;
+}) {
+  const [busy, setBusy] = useState<"accept" | "decline" | null>(null);
+
+  const respond = useCallback(
+    async (action: "accept" | "decline") => {
+      setBusy(action);
+      const result = await respondToQuote(quote.id, action);
+      setBusy(null);
+      if (!result.ok) {
+        Alert.alert("Couldn't send your response", result.error);
+        return;
+      }
+      onChanged?.();
+      if (action === "accept") {
+        Alert.alert(
+          "Quote accepted",
+          quote.depositPence > 0
+            ? `Your booking is confirmed — it's now under Upcoming. Pay the ${formatGBP(quote.depositPence)} deposit there to lock it in.`
+            : "Your booking is confirmed — it's now under Upcoming.",
+        );
+      }
+    },
+    [quote.id, quote.depositPence, onChanged],
+  );
+
+  const onAccept = useCallback(() => {
+    Alert.alert(
+      "Accept this quote?",
+      `${formatGBP(quote.pricePence)} total${
+        quote.depositPence > 0
+          ? ` — you'll then pay the ${formatGBP(quote.depositPence)} deposit to lock in your booking`
+          : ""
+      }.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Accept", onPress: () => void respond("accept") },
+      ],
+    );
+  }, [quote.pricePence, quote.depositPence, respond]);
+
+  const onDecline = useCallback(() => {
+    Alert.alert(
+      "Decline this quote?",
+      "Your artist will be told. You can keep chatting and they can send a new one.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Decline",
+          style: "destructive",
+          onPress: () => void respond("decline"),
+        },
+      ],
+    );
+  }, [respond]);
+
   return (
     <View className="overflow-hidden rounded-2xl border border-gold-400/40 bg-ink-900">
       <View className="p-4">
@@ -67,13 +126,39 @@ export function QuoteCard({ quote }: { quote: CustomerQuote }) {
         </View>
       </View>
 
-      {/* Honest respond-on-web note */}
-      <View className="flex-row items-center gap-2 border-t border-ink-700 bg-ink-800 px-4 py-3">
-        <Icon name="open-outline" size={14} color={colors.gold[400]} />
-        <Text variant="caption" className="flex-1 text-bone-300">
-          Respond from the quote in your messages on the web for now — accepting
-          in the app is coming soon.
-        </Text>
+      {/* Respond */}
+      <View className="flex-row gap-2.5 border-t border-ink-700 bg-ink-800 px-4 py-3">
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy !== null}
+          onPress={onDecline}
+          className="flex-1 flex-row items-center justify-center rounded-xl border border-ink-600 bg-ink-900 py-2.5 active:opacity-80"
+        >
+          {busy === "decline" ? (
+            <ActivityIndicator size="small" color={colors.bone[300]} />
+          ) : (
+            <Text variant="bodyMedium" className="text-[13px] text-bone-300">
+              Decline
+            </Text>
+          )}
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy !== null}
+          onPress={onAccept}
+          className="flex-[1.6] flex-row items-center justify-center gap-1.5 rounded-xl bg-oxblood-500 py-2.5 active:opacity-85"
+        >
+          {busy === "accept" ? (
+            <ActivityIndicator size="small" color={colors.bone[100]} />
+          ) : (
+            <>
+              <Icon name="checkmark" size={14} color={colors.bone[100]} />
+              <Text variant="bodySemibold" className="text-[13px] text-bone-100">
+                Accept quote
+              </Text>
+            </>
+          )}
+        </Pressable>
       </View>
     </View>
   );
