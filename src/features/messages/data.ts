@@ -25,6 +25,7 @@
 import { supabase } from "../../lib/supabase";
 import { fetchBlockedUserIds } from "../moderation/data";
 import type {
+  RequestView,
   OtherParty,
   QuoteStatus,
   QuoteView,
@@ -48,13 +49,14 @@ interface MessageRow {
   body: string;
   attachments: string[] | null;
   quote_id: string | null;
+  booking_request_id: string | null;
   read_at: string | null;
   created_at: string;
 }
 
 /** Columns read for a message row, incl. the optional inline quote reference. */
 const MESSAGE_SELECT =
-  "id, thread_id, sender_id, body, attachments, quote_id, read_at, created_at";
+  "id, thread_id, sender_id, body, attachments, quote_id, booking_request_id, read_at, created_at";
 
 interface QuoteRow {
   id: string;
@@ -137,10 +139,56 @@ function mapMessage(m: MessageRow, viewerId: string): ThreadMessage {
     body: m.body,
     attachmentPaths: m.attachments ?? [],
     quoteId: m.quote_id ?? null,
+    bookingRequestId: m.booking_request_id ?? null,
     timeLabel: timeLabel(m.created_at),
     dayLabel: dayLabel(m.created_at),
     createdAtIso: m.created_at,
   };
+}
+
+/**
+ * Booking requests carried by messages in a thread, keyed by id. Reads through
+ * booking_requests' own RLS (each side sees only requests they're party to), so
+ * a denial simply yields an empty map and the message falls back to its body.
+ */
+export async function resolveThreadRequests(
+  requestIds: string[],
+): Promise<Record<string, RequestView>> {
+  const out: Record<string, RequestView> = {};
+  const unique = Array.from(new Set(requestIds.filter(Boolean)));
+  if (unique.length === 0) return out;
+
+  const { data } = await supabase
+    .from("booking_requests")
+    .select("id, status, placement, size_desc, description, budget_pence, preferred_dates")
+    .in("id", unique);
+
+  for (const r of (data as
+    | {
+        id: string;
+        status: RequestView["status"];
+        placement: string | null;
+        size_desc: string | null;
+        description: string;
+        budget_pence: number | null;
+        preferred_dates: unknown;
+      }[]
+    | null) ?? []) {
+    out[r.id] = {
+      id: r.id,
+      status: r.status,
+      placement: r.placement,
+      sizeDesc: r.size_desc,
+      description: r.description,
+      budgetPence: r.budget_pence,
+      preferredDates: Array.isArray(r.preferred_dates)
+        ? (r.preferred_dates as unknown[]).filter(
+            (d): d is string => typeof d === "string",
+          )
+        : [],
+    };
+  }
+  return out;
 }
 
 /**
@@ -291,9 +339,11 @@ export async function listThreads(): Promise<ThreadSummary[]> {
     const preview = last
       ? last.quote_id
         ? "Sent a quote"
-        : last.body.trim().length > 0
-          ? last.body.trim()
-          : "Sent a reference photo"
+        : last.booking_request_id
+          ? "Booking request"
+          : last.body.trim().length > 0
+            ? last.body.trim()
+            : "Sent a reference photo"
       : "New conversation";
     return {
       id: r.id,
@@ -349,7 +399,17 @@ export async function getThread(threadId: string): Promise<ThreadView | null> {
   const quoteIds = Array.from(
     new Set(msgRows.map((m) => m.quote_id).filter((id): id is string => !!id)),
   );
-  const quotesById = await resolveThreadQuotes(quoteIds);
+  const requestIds = Array.from(
+    new Set(
+      msgRows
+        .map((m) => m.booking_request_id)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  const [quotesById, requestsById] = await Promise.all([
+    resolveThreadQuotes(quoteIds),
+    resolveThreadRequests(requestIds),
+  ]);
 
   return {
     id: threadRow.id,
@@ -357,6 +417,7 @@ export async function getThread(threadId: string): Promise<ThreadView | null> {
     viewerRole: threadRow.customer_id === userId ? "customer" : "artist",
     messages,
     quotesById,
+    requestsById,
   };
 }
 

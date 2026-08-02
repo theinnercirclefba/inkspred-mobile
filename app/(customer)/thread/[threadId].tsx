@@ -28,6 +28,7 @@ import {
 import type {
   OtherParty,
   QuoteView,
+  RequestView,
   ThreadMessage,
 } from "../../../src/features/messages/types";
 
@@ -66,6 +67,7 @@ export default function ThreadScreen() {
   const [status, setStatus] = useState<Status>("loading");
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [quotesById, setQuotesById] = useState<Record<string, QuoteView>>({});
+  const [requestsById, setRequestsById] = useState<Record<string, RequestView>>({});
   const [other, setOther] = useState<OtherParty | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -90,6 +92,7 @@ export default function ThreadScreen() {
         }
         setOther(view.other);
         setQuotesById(view.quotesById);
+        setRequestsById(view.requestsById);
         setMessages((current) => {
           const pending = current.filter((m) => pendingRef.current.has(m.id));
           return [...view.messages, ...pending];
@@ -255,6 +258,11 @@ export default function ThreadScreen() {
                 quote={
                   item.message.quoteId
                     ? quotesById[item.message.quoteId] ?? null
+                    : null
+                }
+                request={
+                  item.message.bookingRequestId
+                    ? requestsById[item.message.bookingRequestId] ?? null
                     : null
                 }
                 onQuoteChanged={() => void load(false)}

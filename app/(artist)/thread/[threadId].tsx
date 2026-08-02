@@ -29,6 +29,7 @@ import type {
   QuoteView,
   ThreadMessage,
 } from "../../../src/features/artist-messages/types";
+import type { RequestView } from "../../../src/features/messages/types";
 
 type Status = "loading" | "ready" | "notfound" | "error";
 
@@ -69,6 +70,7 @@ export default function ThreadScreen() {
   const [status, setStatus] = useState<Status>("loading");
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [quotesById, setQuotesById] = useState<Record<string, QuoteView>>({});
+  const [requestsById, setRequestsById] = useState<Record<string, RequestView>>({});
   const [other, setOther] = useState<OtherParty | null>(null);
   const [artistId, setArtistId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export default function ThreadScreen() {
         setArtistId(view.artistId);
         setCustomerId(view.customerId);
         setQuotesById((prev) => ({ ...prev, ...view.quotesById }));
+        setRequestsById(view.requestsById);
         setMessages((current) => {
           const pending = current.filter((m) => pendingRef.current.has(m.id));
           return [...view.messages, ...pending];
@@ -286,6 +289,12 @@ export default function ThreadScreen() {
                     ? (quotesById[item.message.quoteId] ?? null)
                     : null
                 }
+                request={
+                  item.message.bookingRequestId
+                    ? (requestsById[item.message.bookingRequestId] ?? null)
+                    : null
+                }
+                onRequestChanged={() => void load(false)}
               />
             )
           }

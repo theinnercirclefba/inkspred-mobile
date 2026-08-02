@@ -22,7 +22,7 @@
 
 import { supabase } from "../../lib/supabase";
 import { fetchBlockedUserIds } from "../moderation/data";
-import { dayLabel, timeLabel } from "../messages/data";
+import { dayLabel, timeLabel, resolveThreadRequests } from "../messages/data";
 import type {
   CreateQuoteInput,
   CreateQuoteResult,
@@ -49,12 +49,13 @@ interface MessageRow {
   body: string;
   attachments: string[] | null;
   quote_id: string | null;
+  booking_request_id: string | null;
   read_at: string | null;
   created_at: string;
 }
 
 const MESSAGE_SELECT =
-  "id, thread_id, sender_id, body, attachments, quote_id, read_at, created_at";
+  "id, thread_id, sender_id, body, attachments, quote_id, booking_request_id, read_at, created_at";
 
 interface QuoteRow {
   id: string;
@@ -124,6 +125,7 @@ function mapMessage(m: MessageRow, viewerId: string): ThreadMessage {
     body: m.body,
     attachmentPaths: m.attachments ?? [],
     quoteId: m.quote_id ?? null,
+    bookingRequestId: m.booking_request_id ?? null,
     timeLabel: timeLabel(m.created_at),
     dayLabel: dayLabel(m.created_at),
     createdAtIso: m.created_at,
@@ -208,6 +210,41 @@ async function resolveThreadQuotes(
 /* ── Public API ─────────────────────────────────────────────────────── */
 
 /**
+ * The artist's one conversation with a given client (the pair thread —
+ * booking_request_id NULL). Creates it if it doesn't exist yet (RLS:
+ * threads_participant_insert allows the owning artist), so "Message this
+ * client" always lands somewhere real. Null on failure.
+ */
+export async function getOrCreateClientThread(
+  artistId: string,
+  customerId: string,
+): Promise<string | null> {
+  const find = () =>
+    supabase
+      .from("threads")
+      .select("id")
+      .eq("artist_id", artistId)
+      .eq("customer_id", customerId)
+      .is("booking_request_id", null)
+      .maybeSingle();
+
+  const { data: existing } = await find();
+  if (existing) return (existing as { id: string }).id;
+
+  const { data: created, error } = await supabase
+    .from("threads")
+    .insert({ artist_id: artistId, customer_id: customerId })
+    .select("id")
+    .single();
+  if (created) return (created as { id: string }).id;
+  if (error?.code === "23505") {
+    const { data: raced } = await find();
+    if (raced) return (raced as { id: string }).id;
+  }
+  return null;
+}
+
+/**
  * The signed-in artist's threads, newest first, with the client, a last-message
  * preview and an incoming-unread count. Empty array when signed out or on error
  * — the tab renders its own sign-in / empty / error state.
@@ -257,9 +294,11 @@ export async function listArtistThreads(): Promise<ThreadSummary[]> {
     const preview = last
       ? last.quote_id
         ? "You sent a quote"
-        : last.body.trim().length > 0
-          ? last.body.trim()
-          : "Reference photo"
+        : last.booking_request_id
+          ? "Booking request"
+          : last.body.trim().length > 0
+            ? last.body.trim()
+            : "Reference photo"
       : "New enquiry";
     return {
       id: r.id,
@@ -318,7 +357,17 @@ export async function getArtistThread(
   const quoteIds = Array.from(
     new Set(msgRows.map((m) => m.quote_id).filter((id): id is string => !!id)),
   );
-  const quotesById = await resolveThreadQuotes(quoteIds);
+  const requestIds = Array.from(
+    new Set(
+      msgRows
+        .map((m) => m.booking_request_id)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  const [quotesById, requestsById] = await Promise.all([
+    resolveThreadQuotes(quoteIds),
+    resolveThreadRequests(requestIds),
+  ]);
 
   return {
     id: threadRow.id,
@@ -327,6 +376,7 @@ export async function getArtistThread(
     customerId: threadRow.customer_id,
     messages,
     quotesById,
+    requestsById,
   };
 }
 

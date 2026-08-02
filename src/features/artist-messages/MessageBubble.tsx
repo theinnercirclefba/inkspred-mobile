@@ -3,7 +3,9 @@ import { Text } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { colors } from "../../ui/tokens";
 import { QuoteCard } from "./QuoteCard";
+import { ArtistRequestCard } from "./RequestCard";
 import type { QuoteView, ThreadMessage } from "./types";
+import type { RequestView } from "../messages/types";
 
 /**
  * A single message row on the ARTIST side. Mine (the artist's) right-aligned in
@@ -16,13 +18,36 @@ import type { QuoteView, ThreadMessage } from "./types";
 export function MessageBubble({
   message,
   quote,
+  request,
+  onRequestChanged,
 }: {
   message: ThreadMessage;
   quote: QuoteView | null;
+  /** The booking request this message carries (the conversation's opener). */
+  request?: RequestView | null;
+  /** Refreshes the thread after an in-card accept/decline. */
+  onRequestChanged?: () => void;
 }) {
   const { mine } = message;
   const hasText = message.body.trim().length > 0;
   const attachments = message.attachmentPaths ?? [];
+
+  // A request message: the client's structured enquiry, with live actions.
+  if (request) {
+    return (
+      <View className={`w-full ${mine ? "items-end" : "items-start"}`}>
+        <View className="w-[88%]">
+          <ArtistRequestCard request={request} onChanged={onRequestChanged} />
+          <Text
+            variant="caption"
+            className={`mt-1 text-bone-500 ${mine ? "text-right" : "text-left"}`}
+          >
+            {message.timeLabel}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   // A quote message: render the card, aligned to the sender (the artist).
   if (quote) {

@@ -3,7 +3,8 @@ import { Text } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { colors } from "../../ui/tokens";
 import { QuoteCard } from "./QuoteCard";
-import type { QuoteView, ThreadMessage } from "./types";
+import { RequestCard } from "./RequestCard";
+import type { QuoteView, RequestView, ThreadMessage } from "./types";
 
 /**
  * A single message row. Mine right-aligned in oxblood, theirs left in ink. A
@@ -14,16 +15,36 @@ import type { QuoteView, ThreadMessage } from "./types";
 export function MessageBubble({
   message,
   quote,
+  request,
   onQuoteChanged,
 }: {
   message: ThreadMessage;
   quote: QuoteView | null;
+  /** The booking request this message carries (the conversation's opener). */
+  request?: RequestView | null;
   /** Refreshes the thread after an in-card quote accept/decline. */
   onQuoteChanged?: () => void;
 }) {
   const { mine } = message;
   const hasText = message.body.trim().length > 0;
   const attachments = message.attachmentPaths ?? [];
+
+  // A request message: the structured enquiry renders as the rich opener card.
+  if (request) {
+    return (
+      <View className={`w-full ${mine ? "items-end" : "items-start"}`}>
+        <View className="w-[88%]">
+          <RequestCard request={request} />
+          <Text
+            variant="caption"
+            className={`mt-1 text-bone-500 ${mine ? "text-right" : "text-left"}`}
+          >
+            {message.timeLabel}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   // A quote message: render the card, full-width-ish, aligned to the sender.
   if (quote) {

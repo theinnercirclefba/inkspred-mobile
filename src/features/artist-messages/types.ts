@@ -20,7 +20,7 @@ export type {
   SendResult,
 } from "../messages/types";
 
-import type { OtherParty, QuoteView, ThreadMessage } from "../messages/types";
+import type { OtherParty, QuoteView, RequestView, ThreadMessage } from "../messages/types";
 
 /** A full conversation as the ARTIST sees it. */
 export interface ArtistThreadView {
@@ -34,6 +34,8 @@ export interface ArtistThreadView {
   messages: ThreadMessage[];
   /** Quotes referenced by messages in this thread, keyed by quote id. */
   quotesById: Record<string, QuoteView>;
+  /** Booking requests referenced by messages, keyed by request id. */
+  requestsById: Record<string, RequestView>;
 }
 
 /**

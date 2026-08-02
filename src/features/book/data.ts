@@ -42,10 +42,56 @@ export interface CreateBookingRequestInput {
 }
 
 export type CreateBookingRequestResult =
-  | { ok: true; requestId: string }
+  | {
+      ok: true;
+      requestId: string;
+      /**
+       * The artist↔customer conversation this request now opens — the request
+       * is its latest message. Null only if the thread write soft-failed (the
+       * request itself still saved), in which case the caller falls back to
+       * My Bookings.
+       */
+      threadId: string | null;
+    }
   | { ok: false; error: "not_authenticated" }
   | { ok: false; error: "invalid_input" }
   | { ok: false; error: "save_failed" };
+
+/**
+ * The one conversation between this customer and artist (booking_request_id
+ * NULL — the pair thread). Creates it if it doesn't exist yet; tolerates the
+ * unique-race by re-selecting. Returns null on any RLS/network failure.
+ */
+async function getOrCreatePairThread(
+  userId: string,
+  artistId: string,
+): Promise<string | null> {
+  const find = () =>
+    supabase
+      .from("threads")
+      .select("id")
+      .eq("artist_id", artistId)
+      .eq("customer_id", userId)
+      .is("booking_request_id", null)
+      .maybeSingle();
+
+  const { data: existing } = await find();
+  if (existing) return (existing as { id: string }).id;
+
+  const { data: created, error } = await supabase
+    .from("threads")
+    .insert({ artist_id: artistId, customer_id: userId })
+    .select("id")
+    .single();
+  if (created) return (created as { id: string }).id;
+
+  // 23505 = someone (the artist, or a parallel send) created it first.
+  if (error?.code === "23505") {
+    const { data: raced } = await find();
+    if (raced) return (raced as { id: string }).id;
+  }
+  return null;
+}
 
 /**
  * Persist a booking request for the signed-in customer.
@@ -97,8 +143,28 @@ export async function createBookingRequest(
     return { ok: false, error: "save_failed" };
   }
 
+  const requestId = (data as { id: string }).id;
+
+  // The request opens the conversation: get-or-create the pair thread and land
+  // the request as its latest message (rendered as a rich card in-thread).
+  // Soft path — a failure here never undoes the saved request.
+  let threadId: string | null = null;
+  try {
+    threadId = await getOrCreatePairThread(userId, artistId);
+    if (threadId) {
+      await supabase.from("messages").insert({
+        thread_id: threadId,
+        sender_id: userId,
+        body: description.slice(0, 4000),
+        booking_request_id: requestId,
+      });
+    }
+  } catch {
+    threadId = null;
+  }
+
   // Peak-happiness moment: the customer just reached an artist through the app.
   // Ask for a review (heavily self-throttled; never nags, never throws).
   void maybeRequestReview();
-  return { ok: true, requestId: (data as { id: string }).id };
+  return { ok: true, requestId, threadId };
 }

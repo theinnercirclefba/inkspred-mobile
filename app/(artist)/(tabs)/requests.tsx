@@ -20,6 +20,7 @@ import {
   proposeSessionTime,
 } from "../../../src/features/artist/actions";
 import { RequestRow } from "../../../src/features/artist/RequestRow";
+import { getOrCreateClientThread } from "../../../src/features/artist-messages/data";
 import { ProposeTimeSheet } from "../../../src/features/artist/ProposeTimeSheet";
 
 type Status = "loading" | "ready" | "error";
@@ -104,6 +105,16 @@ export default function Requests() {
       );
     },
     [],
+  );
+
+  /* ── Message this client ─────────────────────────────────────────── */
+  const handleMessage = useCallback(
+    async (request: ArtistRequest) => {
+      if (!ctx) return;
+      const threadId = await getOrCreateClientThread(ctx.artistId, request.customerId);
+      if (threadId) router.push(`/(artist)/thread/${threadId}`);
+    },
+    [ctx, router],
   );
 
   /* ── Accept ──────────────────────────────────────────────────────── */
@@ -295,6 +306,7 @@ export default function Requests() {
               onAccept={handleAccept}
               onDecline={handleDecline}
               onPropose={setProposing}
+              onMessage={handleMessage}
             />
           ))}
         </View>

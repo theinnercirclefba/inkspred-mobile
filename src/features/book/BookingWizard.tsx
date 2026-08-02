@@ -47,6 +47,7 @@ export function BookingWizard({ artist }: { artist: ArtistProfile }) {
   const [draft, setDraft] = useState<BookingDraft>(INITIAL_DRAFT);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
@@ -135,6 +136,7 @@ export function BookingWizard({ artist }: { artist: ArtistProfile }) {
     });
 
     if (result.ok) {
+      setThreadId(result.threadId);
       setSubmitted(true);
       return;
     }
@@ -155,7 +157,12 @@ export function BookingWizard({ artist }: { artist: ArtistProfile }) {
         <SafeAreaView edges={["top", "bottom"]} className="flex-1">
           <SuccessScreen
             artistName={artist.displayName}
-            onDone={() => router.replace("/(customer)/(tabs)/bookings")}
+            conversationReady={threadId !== null}
+            onDone={() =>
+              threadId
+                ? router.replace(`/(customer)/thread/${threadId}`)
+                : router.replace("/(customer)/(tabs)/bookings")
+            }
           />
         </SafeAreaView>
       </View>

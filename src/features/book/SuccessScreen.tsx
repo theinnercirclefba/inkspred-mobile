@@ -10,9 +10,12 @@ import { colors } from "../../ui/tokens";
  */
 export function SuccessScreen({
   artistName,
+  conversationReady = false,
   onDone,
 }: {
   artistName: string;
+  /** When true the request opened a thread and Done lands in the conversation. */
+  conversationReady?: boolean;
   onDone: () => void;
 }) {
   return (
@@ -25,8 +28,9 @@ export function SuccessScreen({
         Request sent
       </Text>
       <Text variant="body" className="mt-3 max-w-[300px] text-center text-bone-300">
-        Your enquiry is on its way to {artistName}. You&rsquo;ll hear back once
-        they&rsquo;ve had a look — track it any time in Bookings.
+        {conversationReady
+          ? `Your enquiry is on its way to ${artistName} — and it's opened your conversation, so you can talk it through right there.`
+          : `Your enquiry is on its way to ${artistName}. You'll hear back once they've had a look — track it any time in Bookings.`}
       </Text>
 
       <View className="mt-8 w-full max-w-[320px] gap-3">
@@ -40,7 +44,11 @@ export function SuccessScreen({
       </View>
 
       <View className="mt-8 w-full max-w-[320px]">
-        <Button label="Done" variant="primary" onPress={onDone} />
+        <Button
+          label={conversationReady ? "Open the conversation" : "Done"}
+          variant="primary"
+          onPress={onDone}
+        />
       </View>
     </View>
   );

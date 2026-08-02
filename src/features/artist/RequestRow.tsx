@@ -25,6 +25,8 @@ export interface RequestRowProps {
   onAccept: (request: ArtistRequest) => void;
   onDecline: (request: ArtistRequest) => void;
   onPropose: (request: ArtistRequest) => void;
+  /** Opens the conversation with this client (the request lives there too). */
+  onMessage?: (request: ArtistRequest) => void;
 }
 
 const STATUS: Record<
@@ -59,6 +61,7 @@ export function RequestRow({
   onAccept,
   onDecline,
   onPropose,
+  onMessage,
 }: RequestRowProps) {
   const status = STATUS[request.status];
   const detail = detailLine(request.placement, request.sizeDesc);
@@ -184,6 +187,17 @@ export function RequestRow({
             variant={request.sessionLabel ? "secondary" : "gold"}
             disabled={pending}
             onPress={() => onPropose(request)}
+          />
+        </View>
+      ) : null}
+
+      {onMessage ? (
+        <View className="mt-3">
+          <Button
+            label={`Message ${request.customer}`}
+            variant="ghost"
+            disabled={pending}
+            onPress={() => onMessage(request)}
           />
         </View>
       ) : null}

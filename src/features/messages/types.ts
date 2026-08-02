@@ -80,6 +80,20 @@ export interface ThreadMessage {
   createdAtIso: string;
   /** The quote this message carries, if any. Null for ordinary messages. */
   quoteId?: string | null;
+  /** The booking request this message carries (the conversation's opener). */
+  bookingRequestId?: string | null;
+}
+
+/** A booking request rendered as an in-thread card (mirrors QuoteView). */
+export interface RequestView {
+  id: string;
+  status: "pending" | "reviewing" | "accepted" | "declined";
+  placement: string | null;
+  sizeDesc: string | null;
+  description: string;
+  budgetPence: number | null;
+  /** Preferred ISO dates the customer picked. */
+  preferredDates: string[];
 }
 
 /** A full conversation. */
@@ -91,6 +105,8 @@ export interface ThreadView {
   messages: ThreadMessage[];
   /** Quotes referenced by messages in this thread, keyed by quote id. */
   quotesById: Record<string, QuoteView>;
+  /** Booking requests referenced by messages, keyed by request id. */
+  requestsById: Record<string, RequestView>;
 }
 
 /** Result of a send. `message` is the persisted row for optimistic reconcile. */
